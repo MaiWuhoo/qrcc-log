@@ -181,8 +181,8 @@ export default function QAQCDetails() {
         </div>
         <p className="grid-hint">
           {isStaff
-            ? " Tick kategori yang defect untuk rekod ni."
-            : " Paparan sahaja — staff QAQC sahaja boleh ubah kategori ni."}
+            ? " Please tick the category for this defect."
+            : " Vuew Only — only QRCC Staff can edit this section"}
         </p>
         <div className="defect-grid-wrap">
           <table className="defect-grid">
@@ -276,7 +276,7 @@ export default function QAQCDetails() {
           onClick={isStaff ? handleSaveStaff : handleSavePublic}
           disabled={saving}
         >
-          {saving ? "Menyimpan..." : "Simpan Kemaskini"}
+          {saving ? "Menyimpan..." : "Saved"}
         </button>
       </div>
     </div>
