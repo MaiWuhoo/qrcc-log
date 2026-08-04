@@ -109,7 +109,7 @@ export default function QAQCDetails() {
     return (
       <div className="card">
         <p>Record Not Found.</p>
-        <Link to="/senarai" className="btn-secondary-link">
+        <Link to="/list" className="btn-secondary-link">
           Back to List
         </Link>
       </div>
@@ -124,7 +124,7 @@ export default function QAQCDetails() {
 
   return (
     <div className="card details-card">
-      <Link to="/senarai" className="back-link">
+      <Link to="/list" className="back-link">
         &larr; QRCC List
       </Link>
 

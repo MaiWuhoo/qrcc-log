@@ -98,7 +98,7 @@ export default function QAQCList() {
           const total = countCheckedDefects(r.categories);
           const status = r.status || "pending";
           return (
-            <Link to={`/senarai/${r.id}`} key={r.id} className="list-row">
+            <Link to={`/list/${r.id}`} key={r.id} className="list-row">
               <div className="mono">{r.date}</div>
               <div>{r.siteName}</div>
               <div>{r.unitNo}</div>

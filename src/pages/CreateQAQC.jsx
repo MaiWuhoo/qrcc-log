@@ -146,7 +146,7 @@ export default function CreateQAQC() {
           </button>
         </form>
         {codeError && <p className="field-error">{codeError}</p>}
-        <Link to="/senarai" className="btn-secondary-link locked-link">
+        <Link to="/list" className="btn-secondary-link locked-link">
           Look Defect List as Public
         </Link>
       </div>
@@ -167,7 +167,7 @@ export default function CreateQAQC() {
           <button className="btn-primary" onClick={handleReset}>
             Create New Defect Form
           </button>
-          <Link to="/senarai" className="btn-secondary-link">
+          <Link to="/list" className="btn-secondary-link">
             Defect List
           </Link>
         </div>
