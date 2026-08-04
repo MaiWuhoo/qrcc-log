@@ -12,6 +12,7 @@ export const DEFECT_CATEGORIES = [
   { key: "pulley", label: "Pulley" },
   { key: "gov_rope", label: "Gov Rope" },
   { key: "brake", label: "Brake" },
+  { key: "water leaking", label: "Water Leaking" },
   { key: "lift_elec", label: "Lift Elec" },
   { key: "esc_mechanical", label: "ESC Mechanical" },
   { key: "esc_electrical", label: "ESC Electrical" },
@@ -52,3 +53,15 @@ export const STATUS_LABEL = {
   pending: "Pending",
   done: "Done",
 };
+
+// Teks "finding" biasanya ditaip macam "1. ... 2. ... 3. ..." dalam satu
+// perenggan. Fungsi ni pecahkan jadi senarai berasingan (satu bullet
+// satu baris) untuk paparan & export Excel.
+export function splitFindingLines(text) {
+  if (!text) return [];
+  const parts = text
+    .split(/(?=\d+\.\s?)/g)
+    .map((s) => s.trim().replace(/,\s*$/, ""))
+    .filter(Boolean);
+  return parts.length > 0 ? parts : [text.trim()];
+}

@@ -8,6 +8,7 @@ import {
   mergeCategories,
   countCheckedDefects,
   STATUS_OPTIONS,
+  splitFindingLines,
 } from "../constants";
 import { useStaff } from "../StaffContext";
 import "./QAQCDetails.css";
@@ -107,16 +108,16 @@ export default function QAQCDetails() {
   if (notFound) {
     return (
       <div className="card">
-        <p>Rekod tidak dijumpai.</p>
+        <p>Record Not Found.</p>
         <Link to="/senarai" className="btn-secondary-link">
-          Kembali ke Senarai
+          Back to List
         </Link>
       </div>
     );
   }
 
   if (!record) {
-    return <div className="card">Memuatkan rekod...</div>;
+    return <div className="card">Store Data...</div>;
   }
 
   const total = countCheckedDefects(categories);
@@ -124,12 +125,12 @@ export default function QAQCDetails() {
   return (
     <div className="card details-card">
       <Link to="/senarai" className="back-link">
-        &larr; Senarai QAQC
+        &larr; QRCC List
       </Link>
 
       <header className="wo-header details-header">
         <div className="wo-eyebrow">
-          butiran rekod {!isStaff && <span className="mode-tag">Public</span>}
+          Record Details {!isStaff && <span className="mode-tag">Public</span>}
         </div>
         <h1 className="wo-title">{record.unitNo}</h1>
         <div className="wo-id">
@@ -149,7 +150,7 @@ export default function QAQCDetails() {
             <dd>{record.siteName}</dd>
           </div>
           <div>
-            <dt>Building Name</dt>
+            <dt>Docket / Block</dt>
             <dd>{record.docket || "—"}</dd>
           </div>
           <div>
@@ -165,7 +166,11 @@ export default function QAQCDetails() {
 
       <section className="wo-section">
         <div className="wo-section-title">Finding During Check</div>
-        <p className="detail-text">{record.finding}</p>
+        <ul className="finding-list">
+          {splitFindingLines(record.finding).map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
       </section>
 
       {record.notes && (
@@ -182,7 +187,7 @@ export default function QAQCDetails() {
         <p className="grid-hint">
           {isStaff
             ? " Please tick the category for this defect."
-            : " Vuew Only — only QRCC Staff can edit this section"}
+            : " View Only — QRCC Staff can update this section"}
         </p>
         <div className="defect-grid-wrap">
           <table className="defect-grid">
@@ -223,7 +228,7 @@ export default function QAQCDetails() {
           <textarea
             className="input textarea"
             rows={3}
-            placeholder="Write rectification record"
+            placeholder="Catatan progress terkini..."
             value={updateRemark}
             onChange={(e) => setUpdateRemark(e.target.value)}
           />
@@ -245,7 +250,7 @@ export default function QAQCDetails() {
             <input
               type="text"
               className="input"
-              placeholder="Nama yang update"
+              placeholder="PIC Name"
               value={picName}
               onChange={(e) => setPicName(e.target.value)}
             />
@@ -276,7 +281,7 @@ export default function QAQCDetails() {
           onClick={isStaff ? handleSaveStaff : handleSavePublic}
           disabled={saving}
         >
-          {saving ? "Menyimpan..." : "Saved"}
+          {saving ? "Menyimpan..." : "Simpan Kemaskini"}
         </button>
       </div>
     </div>

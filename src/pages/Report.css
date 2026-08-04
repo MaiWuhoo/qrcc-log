@@ -12,7 +12,7 @@
 }
 
 .mode-field {
-  min-width: 220px;
+  min-width: 320px;
 }
 
 .report-export-btn {
@@ -28,7 +28,6 @@
 .report-table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 1400px;
   font-size: 13px;
 }
 
@@ -83,9 +82,20 @@
 .rt-defect-cell,
 .rt-remark-cell {
   white-space: normal;
-  min-width: 260px;
-  max-width: 340px;
   line-height: 1.5;
+}
+
+.finding-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.finding-list li {
+  margin-bottom: 4px;
+}
+
+.finding-list li:last-child {
+  margin-bottom: 0;
 }
 
 .rt-cat-cell {
