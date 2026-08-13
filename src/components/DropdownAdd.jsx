@@ -75,14 +75,14 @@ export default function DropdownAdd({
               </option>
             ))}
           </select>
-          <button
+          {/* <button
             type="button"
             className="btn-ghost-add"
             onClick={() => setAdding(true)}
             title={`Add new ${label.toLowerCase()}`}
           >
             + New
-          </button>
+          </button> */}
         </div>
       ) : (
         <div className="dropdown-row">

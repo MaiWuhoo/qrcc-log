@@ -90,3 +90,8 @@ export function computeIncentive(amountPo) {
   if (!amountPo || Number.isNaN(n) || n <= 0) return null;
   return n * 0.015;
 }
+
+export function formatRM(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  return `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}

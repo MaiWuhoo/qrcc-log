@@ -17,6 +17,7 @@ import {
   STATUS_OPTIONS,
   splitFindingLines,
   computeIncentive,
+  formatRM,
 } from "../constants";
 import { useStaff } from "../StaffContext";
 import "./QAQCDetails.css";
@@ -31,11 +32,6 @@ function formatTimestamp(ts) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function formatRM(n) {
-  if (n === null || n === undefined) return "—";
-  return `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function QAQCDetails() {
@@ -61,6 +57,7 @@ export default function QAQCDetails() {
 
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -101,13 +98,9 @@ export default function QAQCDetails() {
   const amountPoLocked =
     record?.amountPo !== null && record?.amountPo !== undefined;
 
-  // Status auto-locks to DONE only when Quotation = Yes AND PO No +
-  // Amount PO are both locked/saved. Cannot be set manually while true.
-  const autoStatusLocked =
-    quotationLocked &&
-    record?.quotation === "yes" &&
-    poNoLocked &&
-    amountPoLocked;
+  // Status auto-locks to DONE as soon as Quotation = Yes is saved.
+  // Cannot be set manually while true.
+  const autoStatusLocked = quotationLocked && record?.quotation === "yes";
 
   const incentivePreview = computeIncentive(
     amountPoLocked ? record.amountPo : amountPo,
@@ -141,13 +134,11 @@ export default function QAQCDetails() {
 
   async function handleSaveStaff() {
     setSaving(true);
+    setSaveError("");
     try {
       const amountNum = amountPo !== "" ? Number(amountPo) : null;
-      const autoLockNow =
-        (quotationLocked ? record.quotation : quotation) === "yes" &&
-        (poNoLocked ? record.poNo : poNo.trim()) &&
-        (amountPoLocked ? record.amountPo : amountNum);
-      const finalStatus = autoLockNow ? "done" : status;
+      const effectiveQuotation = quotationLocked ? record.quotation : quotation;
+      const finalStatus = effectiveQuotation === "yes" ? "done" : status;
 
       const payload = {
         categories,
@@ -158,7 +149,7 @@ export default function QAQCDetails() {
       // once, they will never be sent/changed again.
       if (!quotationLocked && quotation) payload.quotation = quotation;
       if (!poNoLocked && poNo.trim()) payload.poNo = poNo.trim();
-      if (!amountPoLocked && amountNum) {
+      if (!amountPoLocked && amountNum !== null && !Number.isNaN(amountNum)) {
         payload.amountPo = amountNum;
         payload.incentive = computeIncentive(amountNum);
       }
@@ -167,6 +158,7 @@ export default function QAQCDetails() {
       flashSaved();
     } catch (err) {
       console.error(err);
+      setSaveError(`Failed to save: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -175,6 +167,7 @@ export default function QAQCDetails() {
   async function handleSavePublic() {
     if (autoStatusLocked) return; // nothing to save, status is automatic
     setSaving(true);
+    setSaveError("");
     try {
       await updateDoc(doc(db, "qaqc_records", id), {
         status,
@@ -183,6 +176,7 @@ export default function QAQCDetails() {
       flashSaved();
     } catch (err) {
       console.error(err);
+      setSaveError(`Failed to save: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -305,7 +299,6 @@ export default function QAQCDetails() {
           </table>
         </div>
       </section>
-
       {/* ---------- Financial information (staff only) ---------- */}
       {isStaff && (
         <section className="wo-section update-section">
@@ -518,6 +511,9 @@ export default function QAQCDetails() {
 
       <div className="wo-actions details-actions">
         {savedFlash && <span className="saved-flash">Saved.</span>}
+        {saveError && (
+          <span className="field-error save-error-flash">{saveError}</span>
+        )}
         {(isStaff || !autoStatusLocked) && (
           <button
             type="button"

@@ -7,6 +7,7 @@ import {
   STATUS_LABEL,
   splitFindingLines,
   thisMonthValue,
+  formatRM,
 } from "../constants";
 import "./Report.css";
 
@@ -19,7 +20,12 @@ const BASE_HEADERS = [
   "Unit No",
   "Defect",
 ];
-const TAIL_HEADERS = ["Update Defect/Remark", "On Progress", "Status"];
+const TAIL_HEADERS = [
+  "Update Defect/Remark",
+  "Incentive",
+  "On Progress",
+  "Status",
+];
 
 // Width of each column (matches the headers order above). Want to
 // widen a column? Just change the number here — everything else stays.
@@ -33,6 +39,7 @@ const COLUMN_WIDTHS = [
   "340px", // Defect
   ...DEFECT_CATEGORIES.map(() => "95px"), // 9 category columns
   "260px", // Update Defect/Remark
+  "110px", // Incentive
   "95px", // On Progress
   "95px", // Status
 ];
@@ -105,16 +112,12 @@ export default function Report() {
       const found = r.categories?.find((c) => c.key === cat.key);
       return found?.checked ? 1 : "";
     });
-    const rects = r.rectifications || [];
-    const latestRect = rects.length ? rects[rects.length - 1] : null;
     return {
       base: [r.siteName, r.docket || "", r.unitNo, r.finding],
       cats: catCells,
-      tail: [
-        latestRect?.text || "",
-        r.status === "pending" ? "Yes" : "",
-        STATUS_LABEL[r.status] || "",
-      ],
+      rects: r.rectifications || [],
+      incentive: r.incentive ?? null,
+      tail: [r.status === "pending" ? "Yes" : "", STATUS_LABEL[r.status] || ""],
     };
   }
 
@@ -126,33 +129,42 @@ export default function Report() {
   function handleExport() {
     const aoa = [];
     aoa.push(headers);
-    aoa.push(["", "", "", "", "", "", "TOTAL", ...totals, "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "TOTAL", ...totals, "", "", "", ""]);
     filtered.forEach((r, idx) => {
       const row = rowFor(r);
       const excelBase = [...row.base];
       excelBase[3] = splitFindingLines(r.finding).join("\n"); // Defect
+      const remarkExcel = row.rects.length
+        ? row.rects.map((rec, ri) => `${ri + 1}. ${rec.text}`).join("\n")
+        : "";
       aoa.push([
         idx + 1,
         r.cpName,
         r.date,
         ...excelBase,
         ...row.cats,
+        remarkExcel,
+        row.incentive !== null ? row.incentive : "",
         ...row.tail,
       ]);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Try to enable "Wrap Text" for the Defect column so line breaks
-    // (\n) render nicely when opened in Excel. Style support in the
-    // free xlsx package is limited — if it doesn't apply automatically,
-    // select the Defect column in Excel and click "Wrap Text" once.
+    // Try to enable "Wrap Text" for the Defect and Remark columns so
+    // line breaks (\n) render nicely when opened in Excel. Style
+    // support in the free xlsx package is limited — if it doesn't
+    // apply automatically, select those columns in Excel and click
+    // "Wrap Text" once.
     const defectColIndex = 6;
+    const remarkColIndex = 7 + DEFECT_CATEGORIES.length;
     for (let r = 2; r <= filtered.length + 1; r++) {
-      const addr = XLSX.utils.encode_cell({ r, c: defectColIndex });
-      if (ws[addr]) {
-        ws[addr].s = { alignment: { wrapText: true, vertical: "top" } };
-      }
+      [defectColIndex, remarkColIndex].forEach((c) => {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (ws[addr]) {
+          ws[addr].s = { alignment: { wrapText: true, vertical: "top" } };
+        }
+      });
     }
 
     ws["!cols"] = [
@@ -165,6 +177,7 @@ export default function Report() {
       { wch: 40 },
       ...DEFECT_CATEGORIES.map(() => ({ wch: 10 })),
       { wch: 30 },
+      { wch: 12 },
       { wch: 10 },
       { wch: 10 },
     ];
@@ -309,7 +322,7 @@ export default function Report() {
                     {t}
                   </td>
                 ))}
-                <td colSpan={3} />
+                <td colSpan={4} />
               </tr>
             </thead>
             <tbody>
@@ -335,11 +348,22 @@ export default function Report() {
                         {v}
                       </td>
                     ))}
-                    <td className="rt-remark-cell">{row.tail[0] || "—"}</td>
-                    <td>{row.tail[1]}</td>
+                    <td className="rt-remark-cell">
+                      {row.rects.length === 0 ? (
+                        "—"
+                      ) : (
+                        <ol className="rect-numbered-list">
+                          {row.rects.map((rec, ri) => (
+                            <li key={ri}>{rec.text}</li>
+                          ))}
+                        </ol>
+                      )}
+                    </td>
+                    <td className="mono">{formatRM(row.incentive)}</td>
+                    <td>{row.tail[0]}</td>
                     <td>
                       <span className={`badge badge-${r.status || "pending"}`}>
-                        {row.tail[2]}
+                        {row.tail[1]}
                       </span>
                     </td>
                   </tr>
