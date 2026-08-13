@@ -100,7 +100,12 @@ export default function QAQCDetails() {
 
   // Status auto-locks to DONE as soon as Quotation = Yes is saved.
   // Cannot be set manually while true.
-  const autoStatusLocked = quotationLocked && record?.quotation === "yes";
+  // autoStatusLocked
+  const autoStatusLocked =
+    quotationLocked &&
+    record?.quotation === "yes" &&
+    poNoLocked &&
+    amountPoLocked;
 
   const incentivePreview = computeIncentive(
     amountPoLocked ? record.amountPo : amountPo,
@@ -136,9 +141,13 @@ export default function QAQCDetails() {
     setSaving(true);
     setSaveError("");
     try {
+      // dalam handleSaveStaff()
       const amountNum = amountPo !== "" ? Number(amountPo) : null;
-      const effectiveQuotation = quotationLocked ? record.quotation : quotation;
-      const finalStatus = effectiveQuotation === "yes" ? "done" : status;
+      const autoLockNow =
+        (quotationLocked ? record.quotation : quotation) === "yes" &&
+        (poNoLocked ? record.poNo : poNo.trim()) &&
+        (amountPoLocked ? record.amountPo : amountNum);
+      const finalStatus = autoLockNow ? "done" : status;
 
       const payload = {
         categories,
@@ -490,8 +499,7 @@ export default function QAQCDetails() {
           <label className="field-label">Status</label>
           {autoStatusLocked ? (
             <div className="locked-value status-auto">
-              <Lock size={12} className="inline-lock" /> Done — auto (Quotation
-              approved)
+              <Lock size={12} className="inline-lock" /> Done
             </div>
           ) : (
             <select
