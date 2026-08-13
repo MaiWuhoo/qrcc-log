@@ -65,6 +65,22 @@
   margin: 0;
 }
 
+.finding-list {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  margin: 0;
+  padding-left: 20px;
+}
+
+.finding-list li {
+  margin-bottom: 4px;
+}
+
+.finding-list li:last-child {
+  margin-bottom: 0;
+}
+
 /* ---------- Defect category grid (fixed green columns) ---------- */
 .grid-hint {
   font-size: 13px;
@@ -149,7 +165,7 @@
 .toggle-btn {
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   padding: 9px 0;
   border: 1px solid var(--line);
@@ -165,7 +181,107 @@
   color: #fff;
 }
 
-/* ---------- Save action ---------- */
+/* ---------- Rectification log ---------- */
+.rect-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.rect-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px 18px;
+  background: #fff;
+}
+
+.rect-box-draft {
+  border-style: dashed;
+  border-color: var(--amber);
+  background: rgba(242, 169, 59, 0.05);
+}
+
+.input:disabled,
+.textarea:disabled {
+  background: var(--paper);
+  color: var(--steel);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.inline-lock {
+  color: var(--steel);
+  vertical-align: -1px;
+  margin-left: 4px;
+}
+
+.rect-saved-field,
+.rect-add-btn-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.rect-saved-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 11px;
+}
+
+.rect-add-btn-field .btn-primary {
+  width: 100%;
+}
+
+.rect-saved-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--steel);
+  margin: 10px 0 0;
+}
+
+/* ---------- Locked field display ---------- */
+.locked-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-lock {
+  color: var(--steel);
+  vertical-align: -1px;
+}
+
+.incentive-field {
+  margin-top: 16px;
+}
+
+.incentive-value {
+  color: var(--moss);
+  font-weight: 700;
+  max-width: 220px;
+}
+
+.status-auto {
+  color: var(--moss);
+  border-color: rgba(76, 122, 94, 0.3);
+  background: rgba(76, 122, 94, 0.08);
+}
 .details-actions {
   justify-content: flex-end;
   align-items: center;

@@ -1,9 +1,9 @@
 export default function StatusStamp({ state }) {
-  // state: "draf" | "sedia" | "dihantar"
+  // state: "draft" | "ready" | "submitted"
   const config = {
-    draf: { text: "DRAF", tone: "stamp-steel" },
-    sedia: { text: "READY TO SUBMIT", tone: "stamp-amber" },
-    dihantar: { text: "SUBMIT", tone: "stamp-moss" },
+    draft: { text: "DRAFT", tone: "stamp-steel" },
+    ready: { text: "READY TO SUBMIT", tone: "stamp-amber" },
+    submitted: { text: "SUBMITTED", tone: "stamp-moss" },
   }[state];
 
   return (

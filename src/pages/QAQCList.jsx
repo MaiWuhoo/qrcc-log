@@ -46,11 +46,11 @@ export default function QAQCList() {
     <div className="card list-card">
       <header className="list-header">
         <div className="wo-eyebrow">Record List</div>
-        <h1 className="wo-title">Form List</h1>
+        <h1 className="wo-title">QRCC List</h1>
         <p className="list-sub">
           {selectedCpName
-            ? `QRCC History Record ${selectedCpName}.`
-            : "All Defect Record"}
+            ? `QRCC record history for ${selectedCpName}.`
+            : "All QRCC records that have been submitted."}
         </p>
       </header>
 
@@ -71,7 +71,7 @@ export default function QAQCList() {
           </select>
         </div>
 
-        <Link to="/" className="btn-secondary-link list-cta">
+        <Link to="/create" className="btn-secondary-link list-cta">
           + Create New Form
         </Link>
       </div>
@@ -81,17 +81,17 @@ export default function QAQCList() {
           <div>Date</div>
           <div>Site Name</div>
           <div>Unit No</div>
-          <div>Name CP</div>
+          <div>CP Name</div>
           <div>Defect</div>
-          <div>Due Date</div>
+          <div>Quotation</div>
           <div>Status</div>
           <div />
         </div>
 
-        {loading && <div className="list-empty">Store record...</div>}
+        {loading && <div className="list-empty">Loading records...</div>}
 
         {!loading && filtered.length === 0 && (
-          <div className="list-empty">Not record found.</div>
+          <div className="list-empty">No records found.</div>
         )}
 
         {filtered.map((r) => {
@@ -104,7 +104,9 @@ export default function QAQCList() {
               <div>{r.unitNo}</div>
               <div>{r.cpName}</div>
               <div className="mono">{total}</div>
-              <div className="mono">{r.dueDate || "—"}</div>
+              <div className="mono">
+                {r.quotation ? r.quotation.toUpperCase() : "—"}
+              </div>
               <div>
                 <span className={`badge badge-${status}`}>
                   {STATUS_LABEL[status]}

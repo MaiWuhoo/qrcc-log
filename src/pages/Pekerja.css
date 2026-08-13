@@ -1,0 +1,104 @@
+.pekerja-card {
+  max-width: 860px;
+}
+
+.pekerja-add-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.pekerja-add-btn-field .btn-primary {
+  white-space: nowrap;
+}
+
+.pekerja-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.pekerja-month-field {
+  max-width: 200px;
+}
+
+.pekerja-set-target-btn {
+  white-space: nowrap;
+}
+
+.pekerja-target-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 16px;
+  align-items: end;
+  padding: 14px 16px;
+  border: 1px dashed var(--amber);
+  background: rgba(242, 169, 59, 0.05);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.pekerja-table {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pekerja-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 90px 90px 100px 24px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  background: #fff;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.pekerja-row:last-child {
+  border-bottom: none;
+}
+
+a.pekerja-row:hover {
+  background: var(--paper);
+}
+
+.pekerja-row-head {
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--steel);
+  font-weight: 600;
+}
+
+.pekerja-row-arrow {
+  color: var(--steel);
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .pekerja-add-form,
+  .pekerja-target-form {
+    grid-template-columns: 1fr;
+  }
+  .pekerja-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pekerja-row {
+    grid-template-columns: 1fr 1fr;
+    font-size: 13px;
+  }
+  .pekerja-row-head {
+    display: none;
+  }
+  .pekerja-row-arrow {
+    display: none;
+  }
+}

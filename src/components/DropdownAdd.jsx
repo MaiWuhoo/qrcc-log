@@ -3,14 +3,15 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
 /**
- * Dropdown yang baca senarai dari Firestore, dan benarkan tambah entri baru
- * terus dari form (tanpa perlu buka module admin berasingan).
+ * Dropdown that reads a list from Firestore and lets you add a new
+ * entry directly from the form (no need to open a separate admin
+ * module).
  *
  * props:
- *  - label: label field
- *  - collectionName: nama collection Firestore (cth: "employees", "lifts")
+ *  - label: field label
+ *  - collectionName: Firestore collection name (e.g. "employees", "lifts")
  *  - options: array [{id, label}]
- *  - value: id yang dipilih
+ *  - value: selected id
  *  - onChange: (id, label) => void
  *  - loading: boolean
  *  - placeholder
@@ -22,7 +23,7 @@ export default function DropdownAdd({
   value,
   onChange,
   loading,
-  placeholder = "-- Choose --",
+  placeholder = "-- Select --",
 }) {
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState("");
@@ -44,7 +45,7 @@ export default function DropdownAdd({
       setAdding(false);
     } catch (err) {
       console.error(err);
-      setError("Gagal simpan. Cuba lagi.");
+      setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -66,7 +67,7 @@ export default function DropdownAdd({
             disabled={loading}
           >
             <option value="" disabled>
-              {loading ? "Memuatkan..." : placeholder}
+              {loading ? "Loading..." : placeholder}
             </option>
             {options.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -74,21 +75,21 @@ export default function DropdownAdd({
               </option>
             ))}
           </select>
-          {/* <button
+          <button
             type="button"
             className="btn-ghost-add"
             onClick={() => setAdding(true)}
-            title={`Tambah ${label.toLowerCase()} baru`}
+            title={`Add new ${label.toLowerCase()}`}
           >
-            + Baru
-          </button> */}
+            + New
+          </button>
         </div>
       ) : (
         <div className="dropdown-row">
           <input
             className="input"
             autoFocus
-            placeholder={`Nama ${label.toLowerCase()} baru`}
+            placeholder={`New ${label.toLowerCase()} name`}
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => {
@@ -108,7 +109,7 @@ export default function DropdownAdd({
             onClick={handleAddNew}
             disabled={saving || !newLabel.trim()}
           >
-            {saving ? "..." : "Simpan"}
+            {saving ? "..." : "Save"}
           </button>
           <button
             type="button"

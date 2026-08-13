@@ -1,10 +1,11 @@
-// Kategori defect ni TETAP (macam column hijau dalam sheet Excel) -
-// sama untuk semua rekod, tak boleh ubah dari borang.
+// These defect categories are FIXED (like the green columns in the
+// Excel sheet) - same for every record, cannot be changed from the
+// form.
 //
-// Nak tambah kategori baru? Just tambah entri baru dalam array ni.
-// Checkbox dia akan AUTO muncul untuk semua rekod (lama & baru) sebab
-// mergeCategories() di bawah sentiasa rujuk senarai ni sebagai sumber
-// utama, bukan apa yang disimpan dalam rekod lama.
+// Want to add a new category? Just add a new entry to this array.
+// Its checkbox will AUTOMATICALLY appear on every record (old and
+// new) because mergeCategories() below always refers to this list as
+// the source of truth, not whatever is stored on an old record.
 export const DEFECT_CATEGORIES = [
   { key: "motor", label: "Motor" },
   { key: "main_rope", label: "Main Rope" },
@@ -12,13 +13,13 @@ export const DEFECT_CATEGORIES = [
   { key: "pulley", label: "Pulley" },
   { key: "gov_rope", label: "Gov Rope" },
   { key: "brake", label: "Brake" },
-  { key: "water leaking", label: "Water Leaking" },
+  { key: "water_leaking", label: "Water Leaking" },
   { key: "lift_elec", label: "Lift Elec" },
   { key: "esc_mechanical", label: "ESC Mechanical" },
   { key: "esc_electrical", label: "ESC Electrical" },
 ];
 
-// Checklist kosong untuk rekod baru.
+// Empty checklist for a new record.
 export function buildCategoryChecklist() {
   return DEFECT_CATEGORIES.map((c) => ({
     key: c.key,
@@ -27,9 +28,9 @@ export function buildCategoryChecklist() {
   }));
 }
 
-// Gabungkan data checklist yang disimpan dalam rekod dengan senarai
-// DEFECT_CATEGORIES yang TERKINI. Kategori baru yang belum ada dalam
-// rekod lama akan muncul dengan checkbox kosong (bukan hilang).
+// Merge the checklist data stored on a record with the CURRENT
+// DEFECT_CATEGORIES list. Any category added after a record was
+// created will still show up (unticked), not disappear.
 export function mergeCategories(stored) {
   const savedByKey = new Map((stored || []).map((c) => [c.key, c]));
   return DEFECT_CATEGORIES.map((c) => ({
@@ -44,6 +45,22 @@ export function countCheckedDefects(categories) {
   return categories.filter((c) => c.checked).length;
 }
 
+// Use THESE instead of `new Date().toISOString().slice(...)` to avoid
+// a timezone bug — toISOString() converts to UTC, so for Malaysia
+// (UTC+8) the date/month can roll back (e.g. early morning, or
+// whenever a month is built via `new Date(y, m, 1)` since that's
+// always constructed at local midnight).
+export function todayISO(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function thisMonthValue(date = new Date()) {
+  return todayISO(date).slice(0, 7);
+}
+
 export const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "done", label: "Done" },
@@ -54,9 +71,9 @@ export const STATUS_LABEL = {
   done: "Done",
 };
 
-// Teks "finding" biasanya ditaip macam "1. ... 2. ... 3. ..." dalam satu
-// perenggan. Fungsi ni pecahkan jadi senarai berasingan (satu bullet
-// satu baris) untuk paparan & export Excel.
+// The "finding" text is usually typed as "1. ... 2. ... 3. ..." in one
+// paragraph. This function splits it into separate lines (one bullet
+// per line) for display and Excel export.
 export function splitFindingLines(text) {
   if (!text) return [];
   const parts = text
@@ -64,4 +81,12 @@ export function splitFindingLines(text) {
     .map((s) => s.trim().replace(/,\s*$/, ""))
     .filter(Boolean);
   return parts.length > 0 ? parts : [text.trim()];
+}
+
+// Incentive auto-generated = 1.5% of Amount PO. amountPo can be
+// null/"" (not yet entered) -> returns null so the UI can show "—".
+export function computeIncentive(amountPo) {
+  const n = Number(amountPo);
+  if (!amountPo || Number.isNaN(n) || n <= 0) return null;
+  return n * 0.015;
 }

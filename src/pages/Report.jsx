@@ -6,26 +6,10 @@ import {
   DEFECT_CATEGORIES,
   STATUS_LABEL,
   splitFindingLines,
+  thisMonthValue,
 } from "../constants";
 import "./Report.css";
 
-function thisMonthValue() {
-  return new Date().toISOString().slice(0, 7); // "YYYY-MM"
-}
-
-const COLUMN_WIDTHS = [
-  "55px", // No
-  "150px", // Owner Name
-  "100px", // Date AUDIT
-  "150px", // Site Name
-  "110px", // Docket
-  "90px", // Unit No
-  "500px", // Defect
-  ...DEFECT_CATEGORIES.map(() => "95px"), // 9 lajur kategori
-  "260px", // Update Defect/Remark
-  "95px", // On Progres
-  "95px", // Status
-];
 const BASE_HEADERS = [
   "No",
   "Owner Name",
@@ -35,15 +19,30 @@ const BASE_HEADERS = [
   "Unit No",
   "Defect",
 ];
-const TAIL_HEADERS = ["Rectification Record", "Rectified Date", "Status"];
+const TAIL_HEADERS = ["Update Defect/Remark", "On Progress", "Status"];
+
+// Width of each column (matches the headers order above). Want to
+// widen a column? Just change the number here — everything else stays.
+const COLUMN_WIDTHS = [
+  "55px", // No
+  "150px", // Owner Name
+  "100px", // Date AUDIT
+  "150px", // Site Name
+  "110px", // Docket
+  "90px", // Unit No
+  "340px", // Defect
+  ...DEFECT_CATEGORIES.map(() => "95px"), // 9 category columns
+  "260px", // Update Defect/Remark
+  "95px", // On Progress
+  "95px", // Status
+];
 
 export default function Report() {
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [mode, setMode] = useState("month"); // "month" | "range" | "all"
-  const [month, setMonth] = useState(thisMonthValue());
+  const [mode, setMode] = useState("range"); // "range" | "all"
   const [fromMonth, setFromMonth] = useState(thisMonthValue());
   const [toMonth, setToMonth] = useState(thisMonthValue());
   const [cpFilter, setCpFilter] = useState("");
@@ -73,20 +72,18 @@ export default function Report() {
   const filtered = useMemo(() => {
     return records.filter((r) => {
       if (!r.date) return false;
-      if (mode === "month") {
-        if (!r.date.startsWith(month)) return false;
-      } else if (mode === "range") {
+      if (mode === "range") {
         const from = `${fromMonth}-01`;
         const to = `${toMonth}-31`;
         if (r.date < from || r.date > to) return false;
       }
-      // mode === "all" -> tiada tapisan tarikh langsung
+      // mode === "all" -> no date filter at all
       if (cpFilter && r.cpId !== cpFilter) return false;
       if (statusFilter && (r.status || "pending") !== statusFilter)
         return false;
       return true;
     });
-  }, [records, mode, month, fromMonth, toMonth, cpFilter, statusFilter]);
+  }, [records, mode, fromMonth, toMonth, cpFilter, statusFilter]);
 
   const totals = useMemo(() => {
     return DEFECT_CATEGORIES.map((cat) =>
@@ -108,21 +105,22 @@ export default function Report() {
       const found = r.categories?.find((c) => c.key === cat.key);
       return found?.checked ? 1 : "";
     });
+    const rects = r.rectifications || [];
+    const latestRect = rects.length ? rects[rects.length - 1] : null;
     return {
       base: [r.siteName, r.docket || "", r.unitNo, r.finding],
       cats: catCells,
       tail: [
-        r.updateRemark || "",
-        r.dueDate || "",
+        latestRect?.text || "",
+        r.status === "pending" ? "Yes" : "",
         STATUS_LABEL[r.status] || "",
       ],
     };
   }
 
   function periodLabel() {
-    if (mode === "month") return month;
-    if (mode === "range") return `${fromMonth} - ${toMonth}`;
-    return "All Record";
+    if (mode === "all") return "All Records";
+    return fromMonth === toMonth ? fromMonth : `${fromMonth} - ${toMonth}`;
   }
 
   function handleExport() {
@@ -145,11 +143,10 @@ export default function Report() {
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Cuba aktifkan "Wrap Text" untuk lajur Defect supaya baris (\n)
-    // nampak tersusun bila dibuka dalam Excel. Sokongan style pada
-    // package xlsx percuma ni terhad — kalau Excel awak tak papar
-    // wrap automatik, boleh select lajur Defect & klik "Wrap Text"
-    // secara manual sekali sahaja.
+    // Try to enable "Wrap Text" for the Defect column so line breaks
+    // (\n) render nicely when opened in Excel. Style support in the
+    // free xlsx package is limited — if it doesn't apply automatically,
+    // select the Defect column in Excel and click "Wrap Text" once.
     const defectColIndex = 6;
     for (let r = 2; r <= filtered.length + 1; r++) {
       const addr = XLSX.utils.encode_cell({ r, c: defectColIndex });
@@ -179,7 +176,7 @@ export default function Report() {
       ? `-${employees.find((e) => e.id === cpFilter)?.name || "cp"}`
       : "";
     const statusSuffix = statusFilter ? `-${STATUS_LABEL[statusFilter]}` : "";
-    const filename = `QAQC-Report-${periodLabel().replace(/\s/g, "")}${cpSuffix}${statusSuffix}.xlsx`;
+    const filename = `QRCC-Report-${periodLabel().replace(/\s/g, "")}${cpSuffix}${statusSuffix}.xlsx`;
     XLSX.writeFile(wb, filename);
   }
 
@@ -188,7 +185,7 @@ export default function Report() {
 
   function subtitleParts() {
     const parts = [];
-    parts.push(selectedCpName ? `Report For ${selectedCpName}` : "All Report");
+    parts.push(selectedCpName ? `Report for ${selectedCpName}` : "All records");
     if (statusLabel) parts.push(`status ${statusLabel}`);
     parts.push(`— ${periodLabel()}`);
     return parts.join(" ");
@@ -203,67 +200,38 @@ export default function Report() {
       </header>
 
       <div className="report-filters">
-        <div className="field mode-field">
-          <label className="field-label">Report Type</label>
-          <div className="toggle-row">
-            <button
-              type="button"
-              className={`toggle-btn${mode === "month" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("month")}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              className={`toggle-btn${mode === "range" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("range")}
-            >
-              Monthly Range
-            </button>
-            <button
-              type="button"
-              className={`toggle-btn${mode === "all" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("all")}
-            >
-              All Month
-            </button>
-          </div>
+        <div className="field">
+          <label className="field-label">From</label>
+          <input
+            type="month"
+            className="input"
+            value={fromMonth}
+            onChange={(e) => setFromMonth(e.target.value)}
+            disabled={mode === "all"}
+          />
+        </div>
+        <div className="field">
+          <label className="field-label">To</label>
+          <input
+            type="month"
+            className="input"
+            value={toMonth}
+            onChange={(e) => setToMonth(e.target.value)}
+            disabled={mode === "all"}
+          />
         </div>
 
-        {mode === "month" && (
-          <div className="field">
-            <label className="field-label">Month</label>
+        <div className="field checkbox-field">
+          <label className="field-label">&nbsp;</label>
+          <label className="checkbox-label">
             <input
-              type="month"
-              className="input"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
+              type="checkbox"
+              checked={mode === "all"}
+              onChange={(e) => setMode(e.target.checked ? "all" : "range")}
             />
-          </div>
-        )}
-
-        {mode === "range" && (
-          <>
-            <div className="field">
-              <label className="field-label">From</label>
-              <input
-                type="month"
-                className="input"
-                value={fromMonth}
-                onChange={(e) => setFromMonth(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label className="field-label">Untill</label>
-              <input
-                type="month"
-                className="input"
-                value={toMonth}
-                onChange={(e) => setToMonth(e.target.value)}
-              />
-            </div>
-          </>
-        )}
+            All Months
+          </label>
+        </div>
 
         <div className="field">
           <label className="field-label">CP Name</label>
@@ -305,12 +273,17 @@ export default function Report() {
       </div>
 
       {loading ? (
-        <div className="list-empty">Store data...</div>
+        <div className="list-empty">Loading data...</div>
       ) : filtered.length === 0 ? (
-        <div className="list-empty">Record Not Found.</div>
+        <div className="list-empty">No records match this filter.</div>
       ) : (
         <div className="report-table-wrap">
           <table className="report-table">
+            <colgroup>
+              {COLUMN_WIDTHS.map((w, i) => (
+                <col key={i} style={{ width: w }} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 {headers.map((h) => (
@@ -329,7 +302,7 @@ export default function Report() {
                 ))}
               </tr>
               <tr className="rt-total-row">
-                <td colSpan={6}>TOTAL ({filtered.length} rekod)</td>
+                <td colSpan={6}>TOTAL ({filtered.length} records)</td>
                 <td />
                 {totals.map((t, i) => (
                   <td key={i} className="rt-total-cell">

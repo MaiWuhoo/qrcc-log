@@ -12,12 +12,8 @@ import {
 } from "recharts";
 import { ClipboardList, CheckCircle2, Clock } from "lucide-react";
 import { db } from "../firebase";
-import { DEFECT_CATEGORIES } from "../constants";
+import { DEFECT_CATEGORIES, thisMonthValue } from "../constants";
 import "./Dashboard.css";
-
-function thisMonthValue() {
-  return new Date().toISOString().slice(0, 7); // "YYYY-MM"
-}
 
 const CATEGORY_COLORS = {
   motor: "#2f6690",
@@ -40,9 +36,12 @@ function countCategory(records, key) {
 }
 
 function totalDefectsIn(records) {
-  // Setiap FORM/rekod dikira sebagai SATU defect (bukan jumlah kategori
-  // yang ditandakan dalam form tu).
-  return records.length;
+  // Total defect = total of ALL categories ticked across records
+  // (not the number of forms/records).
+  return DEFECT_CATEGORIES.reduce(
+    (sum, cat) => sum + countCategory(records, cat.key),
+    0,
+  );
 }
 
 export default function Dashboard() {
@@ -50,8 +49,7 @@ export default function Dashboard() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [mode, setMode] = useState("month");
-  const [month, setMonth] = useState(thisMonthValue());
+  const [mode, setMode] = useState("range"); // "range" | "all"
   const [fromMonth, setFromMonth] = useState(thisMonthValue());
   const [toMonth, setToMonth] = useState(thisMonthValue());
   const [cpFilter, setCpFilter] = useState("");
@@ -80,18 +78,16 @@ export default function Dashboard() {
   const filtered = useMemo(() => {
     return records.filter((r) => {
       if (!r.date) return false;
-      if (mode === "month") {
-        if (!r.date.startsWith(month)) return false;
-      } else if (mode === "range") {
+      if (mode === "range") {
         const from = `${fromMonth}-01`;
         const to = `${toMonth}-31`;
         if (r.date < from || r.date > to) return false;
       }
-      // mode === "all" -> tiada tapisan tarikh langsung
+      // mode === "all" -> no date filter at all
       if (cpFilter && r.cpId !== cpFilter) return false;
       return true;
     });
-  }, [records, mode, month, fromMonth, toMonth, cpFilter]);
+  }, [records, mode, fromMonth, toMonth, cpFilter]);
 
   const pendingRecords = useMemo(
     () => filtered.filter((r) => (r.status || "pending") === "pending"),
@@ -120,15 +116,14 @@ export default function Dashboard() {
     }
     return [
       bucketRow("Total", filtered),
-      bucketRow("On Progres", pendingRecords),
+      bucketRow("In Progress", pendingRecords),
       bucketRow("Done", doneRecords),
     ];
   }, [filtered, pendingRecords, doneRecords]);
 
   function periodLabel() {
-    if (mode === "month") return month;
-    if (mode === "range") return `${fromMonth} - ${toMonth}`;
-    return "Semua Rekod";
+    if (mode === "all") return "All Records";
+    return fromMonth === toMonth ? fromMonth : `${fromMonth} - ${toMonth}`;
   }
 
   const selectedCpName = employees.find((e) => e.id === cpFilter)?.name;
@@ -136,76 +131,48 @@ export default function Dashboard() {
   return (
     <div className="card dashboard-card">
       <header className="list-header">
+        <div className="wo-eyebrow">overview</div>
         <h1 className="wo-title">Dashboard</h1>
         <p className="list-sub">
           {selectedCpName
             ? `${selectedCpName} — ${periodLabel()}`
-            : `All Report — ${periodLabel()}`}
+            : `All records — ${periodLabel()}`}
         </p>
       </header>
 
       <div className="report-filters">
-        <div className="field mode-field">
-          <label className="field-label">Report Type</label>
-          <div className="toggle-row">
-            <button
-              type="button"
-              className={`toggle-btn${mode === "month" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("month")}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              className={`toggle-btn${mode === "range" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("range")}
-            >
-              Monthly Range
-            </button>
-            <button
-              type="button"
-              className={`toggle-btn${mode === "all" ? " toggle-btn-active" : ""}`}
-              onClick={() => setMode("all")}
-            >
-              All Month
-            </button>
-          </div>
+        <div className="field">
+          <label className="field-label">From</label>
+          <input
+            type="month"
+            className="input"
+            value={fromMonth}
+            onChange={(e) => setFromMonth(e.target.value)}
+            disabled={mode === "all"}
+          />
+        </div>
+        <div className="field">
+          <label className="field-label">To</label>
+          <input
+            type="month"
+            className="input"
+            value={toMonth}
+            onChange={(e) => setToMonth(e.target.value)}
+            disabled={mode === "all"}
+          />
         </div>
 
-        {mode === "month" && (
-          <div className="field">
-            <label className="field-label">Month</label>
+        <div className="field checkbox-field">
+          <label className="field-label">&nbsp;</label>
+          <label className="checkbox-label">
             <input
-              type="month"
-              className="input"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
+              type="checkbox"
+              checked={mode === "all"}
+              onChange={(e) => setMode(e.target.checked ? "all" : "range")}
             />
-          </div>
-        )}
-
-        {mode === "range" && (
-          <>
-            <div className="field">
-              <label className="field-label">From</label>
-              <input
-                type="month"
-                className="input"
-                value={fromMonth}
-                onChange={(e) => setFromMonth(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label className="field-label">Untill</label>
-              <input
-                type="month"
-                className="input"
-                value={toMonth}
-                onChange={(e) => setToMonth(e.target.value)}
-              />
-            </div>
-          </>
-        )}
+            All Months
+          </label>
+        </div>
 
         <div className="field">
           <label className="field-label">CP Name</label>
@@ -225,9 +192,9 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="list-empty">Store Data...</div>
+        <div className="list-empty">Loading data...</div>
       ) : filtered.length === 0 ? (
-        <div className="list-empty">Record not found.</div>
+        <div className="list-empty">No records match this filter.</div>
       ) : (
         <>
           <div className="summary-cards">

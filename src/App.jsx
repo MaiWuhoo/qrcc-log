@@ -13,6 +13,9 @@ import CreateQAQC from "./pages/CreateQAQC";
 import QAQCList from "./pages/QAQCList";
 import QAQCDetails from "./pages/QAQCDetails";
 import Report from "./pages/Report";
+import Pekerja from "./pages/Pekerja";
+import PekerjaDetail from "./pages/PekerjaDetail";
+import LokasiLift from "./pages/LokasiLift";
 import StaffPanel from "./components/StaffPanel";
 import "./App.css";
 
@@ -25,19 +28,31 @@ const modules = [
     to: "/",
   },
   {
-    key: "qaqc",
+    key: "qrcc",
     label: "QRCC",
     icon: ClipboardCheck,
     kind: "group",
     children: [
-      { to: "/new", label: "New Defect", end: true },
-      { to: "/list", label: "Defect List" },
+      { to: "/create", label: "New Record", end: true },
+      { to: "/list", label: "Record List" },
     ],
   },
-  // { key: "lokasi", label: "Lif & Lokasi", icon: Building2, kind: "disabled" },
-  // { key: "pekerja", label: "Pekerja", icon: Users, kind: "disabled" },
   {
-    key: "laporan",
+    key: "locations",
+    label: "Locations",
+    icon: Building2,
+    kind: "single",
+    to: "/locations",
+  },
+  // {
+  //   key: "employees",
+  //   label: "Employees",
+  //   icon: Users,
+  //   kind: "single",
+  //   to: "/employees",
+  // },
+  {
+    key: "report",
     label: "Report",
     icon: FileBarChart,
     kind: "single",
@@ -47,7 +62,7 @@ const modules = [
 
 export default function App() {
   const location = useLocation();
-  const [openGroups, setOpenGroups] = useState({ qaqc: true });
+  const [openGroups, setOpenGroups] = useState({ qrcc: true });
   const [logoError, setLogoError] = useState(false);
 
   function toggleGroup(key) {
@@ -70,6 +85,7 @@ export default function App() {
           )}
           <div>
             <div className="brand-title">QRCC LOG</div>
+            <div className="brand-sub">Maintenance Dept.</div>
           </div>
         </div>
 
@@ -104,7 +120,7 @@ export default function App() {
                 >
                   <Icon size={17} strokeWidth={2} className="nav-group-icon" />
                   <span className="nav-group-text">{m.label}</span>
-                  <span className="nav-badge">akan datang</span>
+                  <span className="nav-badge">coming soon</span>
                 </div>
               );
             }
@@ -161,16 +177,19 @@ export default function App() {
         </nav>
 
         <StaffPanel />
-        <div className="sidebar-footer">v0.4 &middot;</div>
+        <div className="sidebar-footer">v0.5 &middot; </div>
       </aside>
 
       <main className="content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/new" element={<CreateQAQC />} />
+          <Route path="/create" element={<CreateQAQC />} />
           <Route path="/list" element={<QAQCList />} />
           <Route path="/list/:id" element={<QAQCDetails />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/locations" element={<LokasiLift />} />
+          {/* <Route path="/employees" element={<Pekerja />} />
+          <Route path="/employees/:id" element={<PekerjaDetail />} /> */}
         </Routes>
       </main>
     </div>

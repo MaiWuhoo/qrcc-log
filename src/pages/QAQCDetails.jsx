@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, Timestamp } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  arrayUnion,
+  Timestamp,
+} from "firebase/firestore";
+import { Lock } from "lucide-react";
 import { db } from "../firebase";
 import {
   DEFECT_CATEGORIES,
@@ -9,9 +16,27 @@ import {
   countCheckedDefects,
   STATUS_OPTIONS,
   splitFindingLines,
+  computeIncentive,
 } from "../constants";
 import { useStaff } from "../StaffContext";
 import "./QAQCDetails.css";
+
+function formatTimestamp(ts) {
+  if (!ts) return "";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString("en-MY", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatRM(n) {
+  if (n === null || n === undefined) return "—";
+  return `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function QAQCDetails() {
   const { id } = useParams();
@@ -21,10 +46,18 @@ export default function QAQCDetails() {
   const [notFound, setNotFound] = useState(false);
 
   const [categories, setCategories] = useState(buildCategoryChecklist());
-  const [updateRemark, setUpdateRemark] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [picName, setPicName] = useState("");
   const [status, setStatus] = useState("pending");
+
+  // Rectification log (append-only)
+  const [newRectText, setNewRectText] = useState("");
+  const [newRectDate, setNewRectDate] = useState("");
+  const [newRectPic, setNewRectPic] = useState("");
+  const [addingRect, setAddingRect] = useState(false);
+
+  // Financial fields (staff only, locked once saved)
+  const [quotation, setQuotation] = useState("");
+  const [poNo, setPoNo] = useState("");
+  const [amountPo, setAmountPo] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -39,14 +72,15 @@ export default function QAQCDetails() {
         }
         const data = { id: snap.id, ...snap.data() };
         setRecord(data);
-        // mergeCategories sentiasa rujuk DEFECT_CATEGORIES terkini,
-        // jadi kategori baru yang ditambah lepas rekod ni dicipta tetap
-        // akan muncul (checkbox kosong), bukan hilang.
         setCategories(mergeCategories(data.categories));
-        setUpdateRemark(data.updateRemark || "");
-        setDueDate(data.dueDate || "");
-        setPicName(data.picName || "");
         setStatus(data.status || "pending");
+        setQuotation(data.quotation || "");
+        setPoNo(data.poNo || "");
+        setAmountPo(
+          data.amountPo !== null && data.amountPo !== undefined
+            ? String(data.amountPo)
+            : "",
+        );
       },
       () => setNotFound(true),
     );
@@ -60,17 +94,76 @@ export default function QAQCDetails() {
     );
   }
 
+  // Quotation/PO No/Amount PO auto-lock as soon as a value is saved on
+  // the record — they can no longer be changed after that.
+  const quotationLocked = !!record?.quotation;
+  const poNoLocked = !!record?.poNo;
+  const amountPoLocked =
+    record?.amountPo !== null && record?.amountPo !== undefined;
+
+  // Status auto-locks to DONE only when Quotation = Yes AND PO No +
+  // Amount PO are both locked/saved. Cannot be set manually while true.
+  const autoStatusLocked =
+    quotationLocked &&
+    record?.quotation === "yes" &&
+    poNoLocked &&
+    amountPoLocked;
+
+  const incentivePreview = computeIncentive(
+    amountPoLocked ? record.amountPo : amountPo,
+  );
+
+  async function handleAddRectification() {
+    if (!newRectText.trim()) return;
+    setAddingRect(true);
+    try {
+      const entry = {
+        id: crypto.randomUUID(),
+        text: newRectText.trim(),
+        rectifiedDate: newRectDate,
+        picName: newRectPic.trim(),
+        createdAt: Timestamp.now(),
+      };
+      await updateDoc(doc(db, "qaqc_records", id), {
+        rectifications: arrayUnion(entry),
+        updatedAt: Timestamp.now(),
+      });
+      setNewRectText("");
+      setNewRectDate("");
+      setNewRectPic("");
+      flashSaved();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingRect(false);
+    }
+  }
+
   async function handleSaveStaff() {
     setSaving(true);
     try {
-      await updateDoc(doc(db, "qaqc_records", id), {
+      const amountNum = amountPo !== "" ? Number(amountPo) : null;
+      const autoLockNow =
+        (quotationLocked ? record.quotation : quotation) === "yes" &&
+        (poNoLocked ? record.poNo : poNo.trim()) &&
+        (amountPoLocked ? record.amountPo : amountNum);
+      const finalStatus = autoLockNow ? "done" : status;
+
+      const payload = {
         categories,
-        updateRemark: updateRemark.trim(),
-        dueDate,
-        picName: picName.trim(),
-        status,
+        status: finalStatus,
         updatedAt: Timestamp.now(),
-      });
+      };
+      // Financial fields are only sent if NOT locked yet — once saved
+      // once, they will never be sent/changed again.
+      if (!quotationLocked && quotation) payload.quotation = quotation;
+      if (!poNoLocked && poNo.trim()) payload.poNo = poNo.trim();
+      if (!amountPoLocked && amountNum) {
+        payload.amountPo = amountNum;
+        payload.incentive = computeIncentive(amountNum);
+      }
+
+      await updateDoc(doc(db, "qaqc_records", id), payload);
       flashSaved();
     } catch (err) {
       console.error(err);
@@ -79,16 +172,11 @@ export default function QAQCDetails() {
     }
   }
 
-  // Public (bukan staff QAQC) cuma boleh update bahagian "Update Progress"
-  // (Description, Date, PIC Name, Status) — kategori defect & field lain
-  // sengaja tak disertakan dalam updateDoc supaya tak ter-overwrite.
   async function handleSavePublic() {
+    if (autoStatusLocked) return; // nothing to save, status is automatic
     setSaving(true);
     try {
       await updateDoc(doc(db, "qaqc_records", id), {
-        updateRemark: updateRemark.trim(),
-        dueDate,
-        picName: picName.trim(),
         status,
         updatedAt: Timestamp.now(),
       });
@@ -108,7 +196,7 @@ export default function QAQCDetails() {
   if (notFound) {
     return (
       <div className="card">
-        <p>Record Not Found.</p>
+        <p>Record not found.</p>
         <Link to="/list" className="btn-secondary-link">
           Back to List
         </Link>
@@ -117,10 +205,11 @@ export default function QAQCDetails() {
   }
 
   if (!record) {
-    return <div className="card">Store Data...</div>;
+    return <div className="card">Loading record...</div>;
   }
 
   const total = countCheckedDefects(categories);
+  const rectifications = record.rectifications || [];
 
   return (
     <div className="card details-card">
@@ -130,7 +219,7 @@ export default function QAQCDetails() {
 
       <header className="wo-header details-header">
         <div className="wo-eyebrow">
-          Record Details {!isStaff && <span className="mode-tag">Public</span>}
+          record details {!isStaff && <span className="mode-tag">Public</span>}
         </div>
         <h1 className="wo-title">{record.unitNo}</h1>
         <div className="wo-id">
@@ -142,7 +231,7 @@ export default function QAQCDetails() {
         <div className="wo-section-title">Inspection Details</div>
         <dl className="detail-grid">
           <div>
-            <dt>Name CP</dt>
+            <dt>CP Name</dt>
             <dd>{record.cpName}</dd>
           </div>
           <div>
@@ -186,8 +275,8 @@ export default function QAQCDetails() {
         </div>
         <p className="grid-hint">
           {isStaff
-            ? " Please tick the category for this defect."
-            : " View Only — QRCC Staff can update this section"}
+            ? "Tick the categories that are defective for this record."
+            : "View only — only QRCC staff can update these categories."}
         </p>
         <div className="defect-grid-wrap">
           <table className="defect-grid">
@@ -217,47 +306,201 @@ export default function QAQCDetails() {
         </div>
       </section>
 
+      {/* ---------- Financial information (staff only) ---------- */}
+      {isStaff && (
+        <section className="wo-section update-section">
+          <div className="wo-section-title">
+            Financial Information
+            <span className="mode-tag">Locked once saved</span>
+          </div>
+
+          <div className="grid-3">
+            <div className="field">
+              <label className="field-label">
+                Quotation{" "}
+                {quotationLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {quotationLocked ? (
+                <div className="locked-value">
+                  {record.quotation.toUpperCase()}
+                </div>
+              ) : (
+                <select
+                  className="input select"
+                  value={quotation}
+                  onChange={(e) => setQuotation(e.target.value)}
+                >
+                  <option value="">-- Choose --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="field-label">
+                PO No {poNoLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {poNoLocked ? (
+                <div className="locked-value">{record.poNo}</div>
+              ) : (
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="PO Number"
+                  value={poNo}
+                  onChange={(e) => setPoNo(e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="field">
+              <label className="field-label">
+                Amount PO{" "}
+                {amountPoLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {amountPoLocked ? (
+                <div className="locked-value">{formatRM(record.amountPo)}</div>
+              ) : (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  placeholder="0.00"
+                  value={amountPo}
+                  onChange={(e) => setAmountPo(e.target.value)}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="field incentive-field">
+            <label className="field-label">Incentive (1.5% Auto)</label>
+            <div className="locked-value incentive-value">
+              {formatRM(incentivePreview)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ---------- Rectification log (append-only) ---------- */}
       <section className="wo-section update-section">
         <div className="wo-section-title">
-          Update Progress
-          {!isStaff && <span className="mode-tag"></span>}
+          Rectification Record
+          <span className="mode-tag">Add only, cannot edit</span>
         </div>
 
-        <div className="field update-field">
-          <label className="field-label">Rectification Record</label>
-          <textarea
-            className="input textarea"
-            rows={3}
-            placeholder="Catatan progress terkini..."
-            value={updateRemark}
-            onChange={(e) => setUpdateRemark(e.target.value)}
-          />
+        <div className="rect-log">
+          {rectifications.map((r, idx) => (
+            <div className="rect-box" key={r.id || idx}>
+              <div className="field update-field">
+                <label className="field-label">
+                  Rectification Record #{idx + 1}
+                  <Lock size={12} className="inline-lock" />
+                </label>
+                <textarea
+                  className="input textarea"
+                  rows={3}
+                  value={r.text}
+                  disabled
+                />
+              </div>
+              <div className="grid-3">
+                <div className="field">
+                  <label className="field-label">Rectified Date</label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={r.rectifiedDate || ""}
+                    disabled
+                  />
+                </div>
+                <div className="field">
+                  <label className="field-label">PIC Name</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={r.picName || ""}
+                    disabled
+                  />
+                </div>
+                <div className="field rect-saved-field">
+                  <label className="field-label">&nbsp;</label>
+                  <div className="rect-saved-badge">
+                    <Lock size={13} /> Saved
+                  </div>
+                </div>
+              </div>
+              {r.createdAt && (
+                <p className="rect-saved-time">
+                  Saved: {formatTimestamp(r.createdAt)}
+                </p>
+              )}
+            </div>
+          ))}
+
+          <div className="rect-box rect-box-draft">
+            <div className="field update-field">
+              <label className="field-label">
+                {rectifications.length > 0
+                  ? `Rectification Record #${rectifications.length + 1}`
+                  : "Rectification Record"}
+              </label>
+              <textarea
+                className="input textarea"
+                rows={3}
+                placeholder="Latest progress notes..."
+                value={newRectText}
+                onChange={(e) => setNewRectText(e.target.value)}
+              />
+            </div>
+            <div className="grid-3">
+              <div className="field">
+                <label className="field-label">Rectified Date</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={newRectDate}
+                  onChange={(e) => setNewRectDate(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="field-label">PIC Name</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="PIC Name"
+                  value={newRectPic}
+                  onChange={(e) => setNewRectPic(e.target.value)}
+                />
+              </div>
+              <div className="field rect-add-btn-field">
+                <label className="field-label">&nbsp;</label>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleAddRectification}
+                  disabled={addingRect || !newRectText.trim()}
+                >
+                  {addingRect ? "..." : "+ Add Record"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <div className="grid-3">
-          <div className="field">
-            <label className="field-label">Rectified Date</label>
-            <input
-              type="date"
-              className="input"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label className="field-label">PIC Name</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="PIC Name"
-              value={picName}
-              onChange={(e) => setPicName(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label className="field-label">Status</label>
+      {/* ---------- Status ---------- */}
+      <section className="wo-section">
+        <div className="field">
+          <label className="field-label">Status</label>
+          {autoStatusLocked ? (
+            <div className="locked-value status-auto">
+              <Lock size={12} className="inline-lock" /> Done — auto (Quotation
+              approved)
+            </div>
+          ) : (
             <select
               className="input select"
               value={status}
@@ -269,20 +512,22 @@ export default function QAQCDetails() {
                 </option>
               ))}
             </select>
-          </div>
+          )}
         </div>
       </section>
 
       <div className="wo-actions details-actions">
         {savedFlash && <span className="saved-flash">Saved.</span>}
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={isStaff ? handleSaveStaff : handleSavePublic}
-          disabled={saving}
-        >
-          {saving ? "Menyimpan..." : "Simpan Kemaskini"}
-        </button>
+        {(isStaff || !autoStatusLocked) && (
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={isStaff ? handleSaveStaff : handleSavePublic}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        )}
       </div>
     </div>
   );

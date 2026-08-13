@@ -11,19 +11,16 @@ import {
 import { db } from "../firebase";
 import DropdownAdd from "../components/DropdownAdd";
 import StatusStamp from "../components/StatusStamp";
-import { buildCategoryChecklist } from "../constants";
+import { buildCategoryChecklist, todayISO } from "../constants";
 import { useStaff } from "../StaffContext";
 import "./CreateQAQC.css";
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function CreateQAQC() {
   const { isStaff, unlock } = useStaff();
 
   const [employees, setEmployees] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [locations, setLocations] = useState([]);
 
   const [cpId, setCpId] = useState("");
   const [cpName, setCpName] = useState("");
@@ -56,16 +53,24 @@ export default function CreateQAQC() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const qLoc = query(collection(db, "locations"), orderBy("name"));
+    const unsub = onSnapshot(qLoc, (snap) =>
+      setLocations(snap.docs.map((d) => d.data().name)),
+    );
+    return () => unsub();
+  }, []);
+
   const isComplete =
     cpId && siteName.trim() && date && unitNo.trim() && finding.trim();
 
-  const stampState = submitted ? "dihantar" : isComplete ? "sedia" : "draf";
+  const stampState = submitted ? "submitted" : isComplete ? "ready" : "draft";
 
   function handleUnlock(e) {
     e.preventDefault();
     const ok = unlock(code.trim());
     if (!ok) {
-      setCodeError("Kod salah.");
+      setCodeError("Incorrect code.");
       return;
     }
     setCode("");
@@ -76,12 +81,13 @@ export default function CreateQAQC() {
     e.preventDefault();
     setSubmitError("");
 
-    if (!cpId) return setSubmitError("Sila pilih nama CP.");
-    if (!siteName.trim()) return setSubmitError("Sila isi job site name.");
-    if (!date) return setSubmitError("Sila pilih date of checking.");
-    if (!unitNo.trim()) return setSubmitError("Sila isi unit no.");
+    if (!cpId) return setSubmitError("Please select a CP name.");
+    if (!siteName.trim())
+      return setSubmitError("Please enter the job site name.");
+    if (!date) return setSubmitError("Please select the date of checking.");
+    if (!unitNo.trim()) return setSubmitError("Please enter the unit no.");
     if (!finding.trim())
-      return setSubmitError("Sila isi finding during check.");
+      return setSubmitError("Please enter the finding during check.");
 
     setSubmitting(true);
     try {
@@ -95,9 +101,11 @@ export default function CreateQAQC() {
         finding: finding.trim(),
         notes: notes.trim(),
         categories: buildCategoryChecklist(),
-        updateRemark: "",
-        dueDate: "",
-        picName: "",
+        rectifications: [],
+        quotation: "",
+        poNo: "",
+        amountPo: null,
+        incentive: null,
         status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -105,7 +113,9 @@ export default function CreateQAQC() {
       setSubmitted(true);
     } catch (err) {
       console.error(err);
-      setSubmitError("Gagal hantar rekod. Semak sambungan dan cuba lagi.");
+      setSubmitError(
+        "Failed to submit record. Check your connection and try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -127,27 +137,28 @@ export default function CreateQAQC() {
   if (!isStaff) {
     return (
       <div className="card locked-card">
-        <div className="wo-eyebrow">akses terhad</div>
-        <h1 className="wo-title">QRCC Staff Only</h1>
+        <div className="wo-eyebrow">access restricted</div>
+        <h1 className="wo-title">QRCC Staff Only Module</h1>
         <p className="confirm-text">
-          Create new defect just fot QRCC Department Only.Enter the code for continue.
+          New records can only be created by QRCC department staff. Enter the
+          staff code to continue.
         </p>
         <form className="locked-form" onSubmit={handleUnlock}>
           <input
             type="password"
             className="input"
-            placeholder="QRCC Staff Code"
+            placeholder="QRCC staff code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             autoFocus
           />
           <button type="submit" className="btn-primary">
-            Open
+            Unlock
           </button>
         </form>
         {codeError && <p className="field-error">{codeError}</p>}
         <Link to="/list" className="btn-secondary-link locked-link">
-          Look Defect List as Public
+          View QRCC List as Public
         </Link>
       </div>
     );
@@ -156,19 +167,19 @@ export default function CreateQAQC() {
   if (submitted) {
     return (
       <div className="card confirm-card">
-        <StatusStamp state="dihantar" />
-        <h2 className="confirm-title">Defect Record sent</h2>
+        <StatusStamp state="submitted" />
+        <h2 className="confirm-title">QRCC record submitted</h2>
         <p className="confirm-text">
-          Inspection for <strong>{unitNo}</strong> at{" "}
-          <strong>{siteName}</strong> at <strong>{date}</strong> by{" "}
+          The inspection for <strong>{unitNo}</strong> at{" "}
+          <strong>{siteName}</strong> on <strong>{date}</strong> by{" "}
           <strong>{cpName}</strong> has been saved.
         </p>
         <div className="confirm-actions">
           <button className="btn-primary" onClick={handleReset}>
-            Create New Defect Form
+            Create new record
           </button>
           <Link to="/list" className="btn-secondary-link">
-            Defect List
+            View QRCC List
           </Link>
         </div>
       </div>
@@ -185,15 +196,15 @@ export default function CreateQAQC() {
         <div className="wo-id">
           REF&nbsp;
           {date.replaceAll("-", "")}
-          -DRAF
+          -DRAFT
         </div>
       </header>
 
       <section className="wo-section">
-        <div className="wo-section-title">01 &mdash; Inspection Defect Details</div>
+        <div className="wo-section-title">01 &mdash; Inspection Details</div>
         <div className="grid-3">
           <DropdownAdd
-            label="Name CP"
+            label="CP Name"
             collectionName="employees"
             options={employees}
             value={cpId}
@@ -213,11 +224,18 @@ export default function CreateQAQC() {
               placeholder="Eg: Twin Galexy"
               value={siteName}
               onChange={(e) => setSiteName(e.target.value)}
+              list="site-name-suggestions"
+              autoComplete="off"
             />
+            <datalist id="site-name-suggestions">
+              {locations.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </div>
 
           <div className="field">
-            <label className="field-label">Building Name</label>
+            <label className="field-label">Docket / Block</label>
             <input
               type="text"
               className="input"
@@ -263,11 +281,11 @@ export default function CreateQAQC() {
       </section>
 
       <section className="wo-section">
-        <div className="wo-section-title">03 &mdash; Additional Remark</div>
+        <div className="wo-section-title">03 &mdash; Additional Notes</div>
         <textarea
           className="input textarea"
           rows={3}
-          placeholder="New additional remark"
+          placeholder="Other notes (optional)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -277,7 +295,7 @@ export default function CreateQAQC() {
 
       <div className="wo-actions">
         <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? "Sent..." : "SUBMIT"}
+          {submitting ? "Submitting..." : "SUBMIT"}
         </button>
       </div>
     </form>
