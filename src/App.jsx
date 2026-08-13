@@ -15,7 +15,7 @@ import QAQCDetails from "./pages/QAQCDetails";
 import Report from "./pages/Report";
 import Pekerja from "./pages/Pekerja";
 import PekerjaDetail from "./pages/PekerjaDetail";
-import LokasiLift from "./pages/LokasiLift";
+import LokasiLift from "./pages/Lokasilift";
 import StaffPanel from "./components/StaffPanel";
 import "./App.css";
 
