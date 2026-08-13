@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useStaff } from "../StaffContext";
-import "./LokasiLift.css";
+import "./Lokasilift.css";
 
 export default function LokasiLift() {
   const { isStaff } = useStaff();
