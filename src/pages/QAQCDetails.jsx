@@ -98,14 +98,13 @@ export default function QAQCDetails() {
   const amountPoLocked =
     record?.amountPo !== null && record?.amountPo !== undefined;
 
-  // Status auto-locks to DONE as soon as Quotation = Yes is saved.
-  // Cannot be set manually while true.
-  // autoStatusLocked
-  const autoStatusLocked =
-    quotationLocked &&
-    record?.quotation === "yes" &&
-    poNoLocked &&
-    amountPoLocked;
+  // Status field becomes LOCKED (no manual edit) as soon as Quotation
+  // = Yes is saved. But the actual status VALUE stays "pending" until
+  // PO No + Amount PO are also filled in — only then does it flip to
+  // "done" automatically.
+  const autoStatusLocked = quotationLocked && record?.quotation === "yes";
+  const financialComplete = autoStatusLocked && poNoLocked && amountPoLocked;
+  const autoStatusValue = financialComplete ? "done" : "pending";
 
   const incentivePreview = computeIncentive(
     amountPoLocked ? record.amountPo : amountPo,
@@ -141,13 +140,16 @@ export default function QAQCDetails() {
     setSaving(true);
     setSaveError("");
     try {
-      // dalam handleSaveStaff()
       const amountNum = amountPo !== "" ? Number(amountPo) : null;
-      const autoLockNow =
-        (quotationLocked ? record.quotation : quotation) === "yes" &&
-        (poNoLocked ? record.poNo : poNo.trim()) &&
-        (amountPoLocked ? record.amountPo : amountNum);
-      const finalStatus = autoLockNow ? "done" : status;
+      const effectiveQuotation = quotationLocked ? record.quotation : quotation;
+      const effectivePoNo = poNoLocked ? record.poNo : poNo.trim();
+      const effectiveAmount = amountPoLocked ? record.amountPo : amountNum;
+      const finalStatus =
+        effectiveQuotation === "yes"
+          ? effectivePoNo && effectiveAmount
+            ? "done"
+            : "pending"
+          : status;
 
       const payload = {
         categories,
@@ -308,83 +310,6 @@ export default function QAQCDetails() {
           </table>
         </div>
       </section>
-      {/* ---------- Financial information (staff only) ---------- */}
-      {isStaff && (
-        <section className="wo-section update-section">
-          <div className="wo-section-title">
-            Financial Information
-            <span className="mode-tag">Locked once saved</span>
-          </div>
-
-          <div className="grid-3">
-            <div className="field">
-              <label className="field-label">
-                Quotation{" "}
-                {quotationLocked && <Lock size={11} className="inline-lock" />}
-              </label>
-              {quotationLocked ? (
-                <div className="locked-value">
-                  {record.quotation.toUpperCase()}
-                </div>
-              ) : (
-                <select
-                  className="input select"
-                  value={quotation}
-                  onChange={(e) => setQuotation(e.target.value)}
-                >
-                  <option value="">-- Choose --</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              )}
-            </div>
-
-            <div className="field">
-              <label className="field-label">
-                PO No {poNoLocked && <Lock size={11} className="inline-lock" />}
-              </label>
-              {poNoLocked ? (
-                <div className="locked-value">{record.poNo}</div>
-              ) : (
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="PO Number"
-                  value={poNo}
-                  onChange={(e) => setPoNo(e.target.value)}
-                />
-              )}
-            </div>
-
-            <div className="field">
-              <label className="field-label">
-                Amount PO{" "}
-                {amountPoLocked && <Lock size={11} className="inline-lock" />}
-              </label>
-              {amountPoLocked ? (
-                <div className="locked-value">{formatRM(record.amountPo)}</div>
-              ) : (
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  placeholder="0.00"
-                  value={amountPo}
-                  onChange={(e) => setAmountPo(e.target.value)}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="field incentive-field">
-            <label className="field-label">Incentive (1.5% Auto)</label>
-            <div className="locked-value incentive-value">
-              {formatRM(incentivePreview)}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ---------- Rectification log (append-only) ---------- */}
       <section className="wo-section update-section">
@@ -493,13 +418,96 @@ export default function QAQCDetails() {
         </div>
       </section>
 
+      {/* ---------- Financial information (staff only) ---------- */}
+      {isStaff && (
+        <section className="wo-section update-section">
+          <div className="wo-section-title">
+            Financial Information
+            <span className="mode-tag">Locked once saved</span>
+          </div>
+
+          <div className="grid-3">
+            <div className="field">
+              <label className="field-label">
+                Quotation{" "}
+                {quotationLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {quotationLocked ? (
+                <div className="locked-value">
+                  {record.quotation.toUpperCase()}
+                </div>
+              ) : (
+                <select
+                  className="input select"
+                  value={quotation}
+                  onChange={(e) => setQuotation(e.target.value)}
+                >
+                  <option value="">-- Choose --</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="field-label">
+                PO No {poNoLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {poNoLocked ? (
+                <div className="locked-value">{record.poNo}</div>
+              ) : (
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="PO Number"
+                  value={poNo}
+                  onChange={(e) => setPoNo(e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="field">
+              <label className="field-label">
+                Amount PO{" "}
+                {amountPoLocked && <Lock size={11} className="inline-lock" />}
+              </label>
+              {amountPoLocked ? (
+                <div className="locked-value">{formatRM(record.amountPo)}</div>
+              ) : (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  placeholder="0.00"
+                  value={amountPo}
+                  onChange={(e) => setAmountPo(e.target.value)}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="field incentive-field">
+            <label className="field-label">Incentive (1.5% Auto)</label>
+            <div className="locked-value incentive-value">
+              {formatRM(incentivePreview)}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ---------- Status ---------- */}
       <section className="wo-section">
         <div className="field">
           <label className="field-label">Status</label>
           {autoStatusLocked ? (
-            <div className="locked-value status-auto">
-              <Lock size={12} className="inline-lock" /> Done
+            <div
+              className={`locked-value ${autoStatusValue === "done" ? "status-auto" : "status-auto-pending"}`}
+            >
+              <Lock size={12} className="inline-lock" />{" "}
+              {autoStatusValue === "done"
+                ? "Done — auto (Quotation approved)"
+                : "Pending — auto (awaiting PO No & Amount PO)"}
             </div>
           ) : (
             <select

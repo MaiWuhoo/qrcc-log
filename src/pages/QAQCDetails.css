@@ -282,6 +282,11 @@
   border-color: rgba(76, 122, 94, 0.3);
   background: rgba(76, 122, 94, 0.08);
 }
+.status-auto-pending {
+  color: var(--amber-ink);
+  border-color: rgba(242, 169, 59, 0.4);
+  background: rgba(242, 169, 59, 0.1);
+}
 .details-actions {
   justify-content: flex-end;
   align-items: center;
