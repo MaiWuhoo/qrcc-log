@@ -7,7 +7,8 @@ import {
   STATUS_LABEL,
   splitFindingLines,
   thisMonthValue,
-  formatRM,
+  getCategoryTooltip,
+  // formatRM, // not used while Incentive column is hidden
 } from "../constants";
 import "./Report.css";
 
@@ -18,13 +19,13 @@ const BASE_HEADERS = [
   "Site Name",
   "Docket",
   "Unit No",
-  "Defect",
+  "Defect Found",
 ];
 const TAIL_HEADERS = [
   "Update Defect/Remark",
-  "Incentive",
-  "On Progress",
-  "Status",
+  // "Incentive",
+  // "On Progress",
+  // "Status",
 ];
 
 // Width of each column (matches the headers order above). Want to
@@ -37,11 +38,11 @@ const COLUMN_WIDTHS = [
   "110px", // Docket
   "90px", // Unit No
   "340px", // Defect
-  ...DEFECT_CATEGORIES.map(() => "95px"), // 9 category columns
+  ...DEFECT_CATEGORIES.map(() => "105px"), // 9 category columns
   "260px", // Update Defect/Remark
-  "110px", // Incentive
-  "95px", // On Progress
-  "95px", // Status
+  // "110px", // Incentive
+  // "95px", // On Progress
+  // "95px", // Status
 ];
 
 export default function Report() {
@@ -116,8 +117,8 @@ export default function Report() {
       base: [r.siteName, r.docket || "", r.unitNo, r.finding],
       cats: catCells,
       rects: r.rectifications || [],
-      incentive: r.incentive ?? null,
-      tail: [r.status === "pending" ? "Yes" : "", STATUS_LABEL[r.status] || ""],
+      // incentive: r.incentive ?? null,
+      // tail: [r.status === "pending" ? "Yes" : "", STATUS_LABEL[r.status] || ""],
     };
   }
 
@@ -129,7 +130,7 @@ export default function Report() {
   function handleExport() {
     const aoa = [];
     aoa.push(headers);
-    aoa.push(["", "", "", "", "", "", "TOTAL", ...totals, "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "TOTAL", ...totals, ""]);
     filtered.forEach((r, idx) => {
       const row = rowFor(r);
       const excelBase = [...row.base];
@@ -144,8 +145,8 @@ export default function Report() {
         ...excelBase,
         ...row.cats,
         remarkExcel,
-        row.incentive !== null ? row.incentive : "",
-        ...row.tail,
+        // row.incentive !== null ? row.incentive : "",
+        // ...row.tail,
       ]);
     });
 
@@ -177,9 +178,9 @@ export default function Report() {
       { wch: 40 },
       ...DEFECT_CATEGORIES.map(() => ({ wch: 10 })),
       { wch: 30 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 10 },
+      // { wch: 12 }, // Incentive
+      // { wch: 10 }, // On Progress
+      // { wch: 10 }, // Status
     ];
 
     const wb = XLSX.utils.book_new();
@@ -299,20 +300,24 @@ export default function Report() {
             </colgroup>
             <thead>
               <tr>
-                {headers.map((h) => (
-                  <th
-                    key={h}
-                    className={
-                      DEFECT_CATEGORIES.some((c) => c.label === h)
-                        ? "rt-cat-head"
-                        : h === "Defect"
-                          ? "rt-defect-head"
-                          : ""
-                    }
-                  >
-                    {h}
-                  </th>
-                ))}
+                {headers.map((h) => {
+                  const cat = DEFECT_CATEGORIES.find((c) => c.label === h);
+                  return (
+                    <th
+                      key={h}
+                      title={cat ? getCategoryTooltip(cat.key) : undefined}
+                      className={
+                        cat
+                          ? "rt-cat-head"
+                          : h === "Defect Found"
+                            ? "rt-defect-head"
+                            : ""
+                      }
+                    >
+                      {h}
+                    </th>
+                  );
+                })}
               </tr>
               <tr className="rt-total-row">
                 <td colSpan={6}>TOTAL ({filtered.length} records)</td>
@@ -322,7 +327,7 @@ export default function Report() {
                     {t}
                   </td>
                 ))}
-                <td colSpan={4} />
+                <td colSpan={1} />
               </tr>
             </thead>
             <tbody>
@@ -359,13 +364,13 @@ export default function Report() {
                         </ol>
                       )}
                     </td>
-                    <td className="mono">{formatRM(row.incentive)}</td>
+                    {/* <td className="mono">{formatRM(row.incentive)}</td>
                     <td>{row.tail[0]}</td>
                     <td>
                       <span className={`badge badge-${r.status || "pending"}`}>
                         {row.tail[1]}
                       </span>
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })}

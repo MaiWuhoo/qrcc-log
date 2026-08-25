@@ -18,6 +18,7 @@ import {
   splitFindingLines,
   computeIncentive,
   formatRM,
+  getCategoryTooltip,
 } from "../constants";
 import { useStaff } from "../StaffContext";
 import "./QAQCDetails.css";
@@ -272,7 +273,9 @@ export default function QAQCDetails() {
             <thead>
               <tr>
                 {DEFECT_CATEGORIES.map((c) => (
-                  <th key={c.key}>{c.label}</th>
+                  <th key={c.key} title={getCategoryTooltip(c.key)}>
+                    {c.label}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -292,82 +295,6 @@ export default function QAQCDetails() {
               </tr>
             </tbody>
           </table>
-        </div>
-      </section>
-      {/* ---------- Financial information (open to everyone; each
-           field locks individually once it has a saved value) ---------- */}
-      <section className="wo-section update-section">
-        <div className="wo-section-title">
-          Financial Information
-          <span className="mode-tag">Locked once saved</span>
-        </div>
-
-        <div className="grid-3">
-          <div className="field">
-            <label className="field-label">
-              Quotation{" "}
-              {quotationLocked && <Lock size={11} className="inline-lock" />}
-            </label>
-            {quotationLocked ? (
-              <div className="locked-value">
-                {record.quotation.toUpperCase()}
-              </div>
-            ) : (
-              <select
-                className="input select"
-                value={quotation}
-                onChange={(e) => setQuotation(e.target.value)}
-              >
-                <option value="">-- Choose --</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            )}
-          </div>
-
-          <div className="field">
-            <label className="field-label">
-              PO No {poNoLocked && <Lock size={11} className="inline-lock" />}
-            </label>
-            {poNoLocked ? (
-              <div className="locked-value">{record.poNo}</div>
-            ) : (
-              <input
-                type="text"
-                className="input"
-                placeholder="PO Number"
-                value={poNo}
-                onChange={(e) => setPoNo(e.target.value)}
-              />
-            )}
-          </div>
-
-          <div className="field">
-            <label className="field-label">
-              Amount PO{" "}
-              {amountPoLocked && <Lock size={11} className="inline-lock" />}
-            </label>
-            {amountPoLocked ? (
-              <div className="locked-value">{formatRM(record.amountPo)}</div>
-            ) : (
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="input"
-                placeholder="0.00"
-                value={amountPo}
-                onChange={(e) => setAmountPo(e.target.value)}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="field incentive-field">
-          <label className="field-label">Incentive (1.5% Auto)</label>
-          <div className="locked-value incentive-value">
-            {formatRM(incentivePreview)}
-          </div>
         </div>
       </section>
 
@@ -478,6 +405,81 @@ export default function QAQCDetails() {
         </div>
       </section>
 
+      {/* ---------- Financial information (open to everyone; each
+           field locks individually once it has a saved value) ---------- */}
+      <section className="wo-section update-section">
+        <div className="wo-section-title">
+          Financial Information
+          <span className="mode-tag">Locked once saved</span>
+        </div>
+
+        <div className="grid-3">
+          <div className="field">
+            <label className="field-label">
+              Quotation {quotationLocked && <Lock size={11} className="inline-lock" />}
+            </label>
+            {quotationLocked ? (
+              <div className="locked-value">
+                {record.quotation.toUpperCase()}
+              </div>
+            ) : (
+              <select
+                className="input select"
+                value={quotation}
+                onChange={(e) => setQuotation(e.target.value)}
+              >
+                <option value="">-- Choose --</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            )}
+          </div>
+
+          <div className="field">
+            <label className="field-label">
+              PO No {poNoLocked && <Lock size={11} className="inline-lock" />}
+            </label>
+            {poNoLocked ? (
+              <div className="locked-value">{record.poNo}</div>
+            ) : (
+              <input
+                type="text"
+                className="input"
+                placeholder="PO Number"
+                value={poNo}
+                onChange={(e) => setPoNo(e.target.value)}
+              />
+            )}
+          </div>
+
+          <div className="field">
+            <label className="field-label">
+              Amount PO {amountPoLocked && <Lock size={11} className="inline-lock" />}
+            </label>
+            {amountPoLocked ? (
+              <div className="locked-value">{formatRM(record.amountPo)}</div>
+            ) : (
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="input"
+                placeholder="0.00"
+                value={amountPo}
+                onChange={(e) => setAmountPo(e.target.value)}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="field incentive-field">
+          <label className="field-label">Incentive (1.5% Auto)</label>
+          <div className="locked-value incentive-value">
+            {formatRM(incentivePreview)}
+          </div>
+        </div>
+      </section>
+
       {/* ---------- Status ---------- */}
       <section className="wo-section">
         <div className="field">
@@ -487,7 +489,9 @@ export default function QAQCDetails() {
               className={`locked-value ${autoStatusValue === "done" ? "status-auto" : "status-auto-pending"}`}
             >
               <Lock size={12} className="inline-lock" />{" "}
-              {autoStatusValue === "done" ? "Done" : "Pending"}
+              {autoStatusValue === "done"
+                ? "Done — auto (Quotation approved)"
+                : "Pending — auto (awaiting PO No & Amount PO)"}
             </div>
           ) : (
             <select
@@ -507,9 +511,7 @@ export default function QAQCDetails() {
 
       <div className="wo-actions details-actions">
         {savedFlash && <span className="saved-flash">Saved.</span>}
-        {saveError && (
-          <span className="field-error save-error-flash">{saveError}</span>
-        )}
+        {saveError && <span className="field-error save-error-flash">{saveError}</span>}
         <button
           type="button"
           className="btn-primary"

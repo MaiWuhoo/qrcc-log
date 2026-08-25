@@ -14,10 +14,45 @@ export const DEFECT_CATEGORIES = [
   { key: "gov_rope", label: "Gov Rope" },
   { key: "brake", label: "Brake" },
   { key: "water_leaking", label: "Water Leaking" },
-  { key: "lift_elec", label: "Lift Elec" },
+  { key: "lift_elec", label: "Lift Electrical Switch" },
   { key: "esc_mechanical", label: "ESC Mechanical" },
   { key: "esc_electrical", label: "ESC Electrical" },
+  { key: "other", label: "OTHER" },
 ];
+
+// Hover tooltip content for each category header — keyed by "key"
+// (not label) so it keeps working even if the label text changes.
+// Each entry is a short bullet list of what falls under that
+// category, joined with newlines for the native `title` tooltip.
+export const CATEGORY_TOOLTIPS = {
+  motor: ["Noise", "Shotting", "Burn"],
+  main_rope: ["Red Dust", "Broken", "Dry"],
+  gear_box: ["Noise", "Oil Leaking"],
+  pulley: ["Broken", "Groove Damage"],
+  gov_rope: ["Red Dust", "Broken"],
+  brake: ["Noise", "Not Function", "Brake release drum damage"],
+  // No description given yet for Water Leaking — placeholder default,
+  // update anytime.
+  water_leaking: ["Any water leaking issue"],
+  lift_elec: ["Switch", "Wiring", "Lighting", "Supply"],
+  esc_mechanical: [
+    "Motor",
+    "Handrail",
+    "Chain",
+    "Step",
+    "Comb",
+    "Skirting",
+    "Other",
+  ],
+  esc_electrical: ["Switch Safety", "Wiring", "Supply"],
+  other: ["Any defect"],
+};
+
+export function getCategoryTooltip(key) {
+  const items = CATEGORY_TOOLTIPS[key];
+  if (!items || items.length === 0) return "";
+  return items.map((i) => `• ${i}`).join("\n");
+}
 
 // Empty checklist for a new record.
 export function buildCategoryChecklist() {
