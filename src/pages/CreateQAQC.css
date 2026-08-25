@@ -301,4 +301,21 @@
     margin-bottom: 14px;
     transform: rotate(0);
   }
+  .confirm-actions {
+    flex-direction: column;
+  }
+  .confirm-actions .btn-primary,
+  .confirm-actions .btn-secondary-link {
+    width: 100%;
+    justify-content: center;
+  }
+  .locked-form {
+    flex-direction: column;
+  }
+  .locked-form .input {
+    max-width: none;
+  }
+  .dropdown-row {
+    flex-wrap: wrap;
+  }
 }

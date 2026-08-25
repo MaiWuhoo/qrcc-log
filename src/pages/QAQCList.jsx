@@ -76,46 +76,51 @@ export default function QAQCList() {
         </Link>
       </div>
 
-      <div className="list-table">
-        <div className="list-row list-row-head">
-          <div>Date</div>
-          <div>Site Name</div>
-          <div>Unit No</div>
-          <div>CP Name</div>
-          <div>Defect</div>
-          <div>Quotation</div>
-          <div>Status</div>
-          <div />
+      {/* Same table structure on every screen size — on narrow screens
+          this box just scrolls sideways instead of restructuring the
+          rows, so it always looks identical to desktop. */}
+      <div className="list-table-wrap">
+        <div className="list-table">
+          <div className="list-row list-row-head">
+            <div>Date</div>
+            <div>Site Name</div>
+            <div>Unit No</div>
+            <div>CP Name</div>
+            <div>Defect</div>
+            {/* <div>Quotation</div>
+            <div>Status</div> */}
+            <div />
+          </div>
+
+          {loading && <div className="list-empty">Loading records...</div>}
+
+          {!loading && filtered.length === 0 && (
+            <div className="list-empty">No records found.</div>
+          )}
+
+          {filtered.map((r) => {
+            const total = countCheckedDefects(r.categories);
+            const status = r.status || "pending";
+            return (
+              <Link to={`/list/${r.id}`} key={r.id} className="list-row">
+                <div className="mono">{r.date}</div>
+                <div>{r.siteName}</div>
+                <div>{r.unitNo}</div>
+                <div>{r.cpName}</div>
+                <div className="mono">{total}</div>
+                {/* <div className="mono">
+                  {r.quotation ? r.quotation.toUpperCase() : "—"}
+                </div>
+                <div>
+                  <span className={`badge badge-${status}`}>
+                    {STATUS_LABEL[status]}
+                  </span>
+                </div> */}
+                <div className="list-row-arrow">&rarr;</div>
+              </Link>
+            );
+          })}
         </div>
-
-        {loading && <div className="list-empty">Loading records...</div>}
-
-        {!loading && filtered.length === 0 && (
-          <div className="list-empty">No records found.</div>
-        )}
-
-        {filtered.map((r) => {
-          const total = countCheckedDefects(r.categories);
-          const status = r.status || "pending";
-          return (
-            <Link to={`/list/${r.id}`} key={r.id} className="list-row">
-              <div className="mono">{r.date}</div>
-              <div>{r.siteName}</div>
-              <div>{r.unitNo}</div>
-              <div>{r.cpName}</div>
-              <div className="mono">{total}</div>
-              <div className="mono">
-                {r.quotation ? r.quotation.toUpperCase() : "—"}
-              </div>
-              <div>
-                <span className={`badge badge-${status}`}>
-                  {STATUS_LABEL[status]}
-                </span>
-              </div>
-              <div className="list-row-arrow">&rarr;</div>
-            </Link>
-          );
-        })}
       </div>
     </div>
   );

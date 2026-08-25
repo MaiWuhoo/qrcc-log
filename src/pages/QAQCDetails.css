@@ -262,11 +262,6 @@
   gap: 6px;
 }
 
-.inline-lock {
-  color: var(--steel);
-  vertical-align: -1px;
-}
-
 .incentive-field {
   margin-top: 16px;
 }
@@ -297,4 +292,35 @@
   font-size: 13px;
   color: var(--moss);
   font-weight: 600;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 700px) {
+  .update-section {
+    padding: 14px 14px 16px;
+  }
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .rect-box {
+    padding: 14px 14px 16px;
+  }
+  .details-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .details-actions .btn-primary {
+    width: 100%;
+    order: 2;
+  }
+  .incentive-value {
+    max-width: none;
+  }
+  .mode-tag {
+    display: block;
+    margin-left: 0;
+    margin-top: 6px;
+    width: fit-content;
+  }
 }

@@ -13,6 +13,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
 }
 
 .brand {
@@ -34,6 +35,7 @@
   border-radius: 4px;
   letter-spacing: 0.02em;
 }
+
 .brand-mark-img {
   width: 34px;
   height: 34px;
@@ -91,6 +93,7 @@
   color: #cbd5e1;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
 }
 
 .nav-group-head:hover:not(:disabled) {
@@ -118,6 +121,7 @@
 
 .nav-group-text {
   flex: 1;
+  white-space: nowrap;
 }
 
 .nav-chevron {
@@ -146,6 +150,7 @@
   font-size: 13.5px;
   color: #93a3b8;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .nav-item-sub:hover {
@@ -239,6 +244,7 @@
   border: 1px solid #364356;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
+  width: 100%;
 }
 
 .staff-panel-actions {
@@ -265,52 +271,143 @@
   padding: 40px 32px 80px;
   display: flex;
   justify-content: center;
+  min-width: 0; /* lets flex/grid children shrink instead of overflowing */
 }
 
+/* ============ TABLET / SMALL DESKTOP ============ */
+@media (max-width: 1024px) {
+  .content {
+    padding: 32px 20px 60px;
+  }
+}
+
+/* ============ MOBILE ============
+   Sidebar collapses from a fixed 240px left column into a top bar
+   that WRAPS its items onto new lines instead of scrolling
+   horizontally — this guarantees nav items never clip or overlap
+   regardless of how many modules get added later. */
 @media (max-width: 780px) {
   .shell {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    min-height: 100vh;
   }
+
   .sidebar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 20;
     height: auto;
+    width: 100%;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    overflow-x: auto;
-    padding: 14px 16px;
+    overflow: visible;
+    padding: 10px 12px;
+    gap: 6px 8px;
   }
+
   .brand {
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
+    padding-right: 0;
+    flex-shrink: 0;
   }
-  .nav {
-    flex-direction: row;
-    align-items: center;
+
+  .brand-sub {
+    display: none;
   }
+
   .nav-section-label {
     display: none;
   }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    flex: 1 1 100%;
+    gap: 4px 6px;
+    order: 3;
+  }
+
   .nav-group {
     flex-direction: row;
     align-items: center;
+    flex-shrink: 0;
   }
+
   .nav-group-head {
     width: auto;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    font-size: 13px;
     white-space: nowrap;
   }
+
+  .nav-group-head-active {
+    background: rgba(242, 169, 59, 0.16);
+  }
+
   .nav-children {
     flex-direction: row;
-    padding: 0 0 0 4px;
+    flex-wrap: wrap;
+    padding: 0;
+    gap: 4px;
   }
+
   .nav-item-sub {
-    padding-left: 10px;
-    white-space: nowrap;
+    padding: 5px 10px 5px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
   }
-  .sidebar-footer {
+
+  .nav-dot {
     display: none;
   }
+
+  .sidebar-footer {
+    display: none; /* just the version tag, safe to hide on mobile */
+  }
+
+  .staff-panel {
+    flex-basis: 100%;
+    padding: 8px 0 0;
+    flex-wrap: wrap;
+    row-gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    margin-top: 6px;
+    order: 4;
+  }
+
+  .staff-panel-form {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .staff-input {
+    width: auto;
+    flex: 1;
+    min-width: 120px;
+  }
+
   .content {
-    padding: 20px 14px 60px;
+    padding: 18px 14px 48px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ============ SMALL PHONES ============ */
+@media (max-width: 420px) {
+  .content {
+    padding: 14px 10px 40px;
+  }
+
+  .brand-title {
+    font-size: 12px;
   }
 }

@@ -63,4 +63,17 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 18px 18px 8px;
+  overflow-x: auto;
+}
+
+@media (max-width: 700px) {
+  .summary-card {
+    padding: 14px 16px;
+  }
+  .summary-value {
+    font-size: 20px;
+  }
+  .chart-panel {
+    padding: 14px 10px 4px;
+  }
 }

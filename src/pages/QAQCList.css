@@ -30,10 +30,14 @@
   margin-left: auto;
 }
 
-.list-table {
+.list-table-wrap {
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
-  overflow: hidden;
+}
+
+.list-table {
+  min-width: 700px;
 }
 
 .list-row {
@@ -105,14 +109,16 @@ a.list-row:hover {
 }
 
 @media (max-width: 700px) {
-  .list-row {
-    grid-template-columns: 1fr 1fr;
-    font-size: 13px;
+  .list-filters {
+    align-items: stretch;
   }
-  .list-row-head {
-    display: none;
+  .list-filters .field {
+    min-width: 0;
+    flex: 1 1 100%;
   }
-  .list-row-arrow {
-    display: none;
+  .list-cta {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
   }
 }

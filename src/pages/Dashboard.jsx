@@ -116,8 +116,8 @@ export default function Dashboard() {
     }
     return [
       bucketRow("Total", filtered),
-      bucketRow("In Progress", pendingRecords),
-      bucketRow("Done", doneRecords),
+      // bucketRow("In Progress", pendingRecords),
+      // bucketRow("Done", doneRecords),
     ];
   }, [filtered, pendingRecords, doneRecords]);
 
@@ -208,7 +208,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="summary-card">
+            {/* <div className="summary-card">
               <div className="summary-icon summary-icon-done">
                 <CheckCircle2 size={20} />
               </div>
@@ -216,9 +216,9 @@ export default function Dashboard() {
                 <div className="summary-value">{totalDone}</div>
                 <div className="summary-label">Total Defect Done</div>
               </div>
-            </div>
+            </div> */}
 
-            <div className="summary-card">
+            {/* <div className="summary-card">
               <div className="summary-icon summary-icon-pending">
                 <Clock size={20} />
               </div>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                 <div className="summary-value">{totalPending}</div>
                 <div className="summary-label">Total Defect Pending</div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="chart-panel">
