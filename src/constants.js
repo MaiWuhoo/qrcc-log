@@ -16,7 +16,7 @@ export const DEFECT_CATEGORIES = [
   { key: "water_leaking", label: "Water Leaking" },
   { key: "lift_elec", label: "Lift Electrical Switch" },
   { key: "esc_mechanical", label: "ESC Mechanical" },
-  { key: "esc_electrical", label: "ESC Electrical" },
+  { key: "esc_electrical", label: "ESC Electrical Switch" },
   { key: "other", label: "OTHER" },
 ];
 
@@ -33,7 +33,11 @@ export const CATEGORY_TOOLTIPS = {
   brake: ["Noise", "Not Function", "Brake release drum damage"],
   // No description given yet for Water Leaking — placeholder default,
   // update anytime.
-  water_leaking: ["Any water leaking issue"],
+  water_leaking: [
+    "Motor Roam Leaking",
+    "Lift Pit Leaking",
+    "Lify Sheft Leaking",
+  ],
   lift_elec: ["Switch", "Wiring", "Lighting", "Supply"],
   esc_mechanical: [
     "Motor",

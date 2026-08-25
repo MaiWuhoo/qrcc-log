@@ -298,7 +298,7 @@ export default function QAQCDetails() {
         </div>
       </section>
 
-      {/* ---------- Rectification log (append-only) ---------- */}
+      {/* ---------- Rectification log (append-only) ----------
       <section className="wo-section update-section">
         <div className="wo-section-title">
           Rectification Record
@@ -404,9 +404,10 @@ export default function QAQCDetails() {
           </div>
         </div>
       </section>
+      ---------------------------------------------------------- */}
 
       {/* ---------- Financial information (open to everyone; each
-           field locks individually once it has a saved value) ---------- */}
+           field locks individually once it has a saved value) ----------
       <section className="wo-section update-section">
         <div className="wo-section-title">
           Financial Information
@@ -479,8 +480,9 @@ export default function QAQCDetails() {
           </div>
         </div>
       </section>
+      ---------------------------------------------------------- */}
 
-      {/* ---------- Status ---------- */}
+      {/* ---------- Status ----------
       <section className="wo-section">
         <div className="field">
           <label className="field-label">Status</label>
@@ -508,6 +510,7 @@ export default function QAQCDetails() {
           )}
         </div>
       </section>
+      ---------------------------------------------------------- */}
 
       <div className="wo-actions details-actions">
         {savedFlash && <span className="saved-flash">Saved.</span>}

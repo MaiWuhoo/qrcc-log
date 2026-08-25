@@ -22,7 +22,7 @@ const BASE_HEADERS = [
   "Defect Found",
 ];
 const TAIL_HEADERS = [
-  "Update Defect/Remark",
+  "Defect Retify Update By Service",
   // "Incentive",
   // "On Progress",
   // "Status",
