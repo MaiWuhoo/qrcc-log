@@ -85,11 +85,10 @@ export default function QAQCDetails() {
     return () => unsub();
   }, [id]);
 
-  function toggleCategory(key) {
-    if (!isStaff) return;
-    setCategories((prev) =>
-      prev.map((c) => (c.key === key ? { ...c, checked: !c.checked } : c)),
-    );
+  function toggleCategory() {
+    // Categories are now set once at creation time (in the Create
+    // Form). This page is a read-only view of the record — kept as a
+    // no-op stub in case editing is reintroduced later.
   }
 
   // Quotation/PO No/Amount PO auto-lock as soon as a value is saved on
@@ -264,9 +263,7 @@ export default function QAQCDetails() {
           Defect Category ({total}/{DEFECT_CATEGORIES.length})
         </div>
         <p className="grid-hint">
-          {isStaff
-            ? "Tick the categories that are defective for this record."
-            : "View only — only QRCC staff can update these categories."}
+          Categories are set when the record is created.
         </p>
         <div className="defect-grid-wrap">
           <table className="defect-grid">
@@ -287,8 +284,8 @@ export default function QAQCDetails() {
                       type="checkbox"
                       className="defect-check-input"
                       checked={c.checked}
-                      disabled={!isStaff}
-                      onChange={() => toggleCategory(c.key)}
+                      disabled
+                      readOnly
                     />
                   </td>
                 ))}
@@ -512,6 +509,9 @@ export default function QAQCDetails() {
       </section>
       ---------------------------------------------------------- */}
 
+      {/* ---------- Save actions (nothing left to edit on this
+           view-only page right now — kept here, commented, so it's
+           ready to restore if the sections above get uncommented) ----------
       <div className="wo-actions details-actions">
         {savedFlash && <span className="saved-flash">Saved.</span>}
         {saveError && <span className="field-error save-error-flash">{saveError}</span>}
@@ -524,6 +524,7 @@ export default function QAQCDetails() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
+      ---------------------------------------------------------- */}
     </div>
   );
 }

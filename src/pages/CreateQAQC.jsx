@@ -11,7 +11,14 @@ import {
 import { db } from "../firebase";
 import DropdownAdd from "../components/DropdownAdd";
 import StatusStamp from "../components/StatusStamp";
-import { buildCategoryChecklist, todayISO } from "../constants";
+import Modal from "../components/Modal";
+import {
+  DEFECT_CATEGORIES,
+  buildCategoryChecklist,
+  countCheckedDefects,
+  getCategoryTooltip,
+  todayISO,
+} from "../constants";
 import { useStaff } from "../StaffContext";
 import "./CreateQAQC.css";
 
@@ -30,6 +37,7 @@ export default function CreateQAQC() {
   const [unitNo, setUnitNo] = useState("");
   const [finding, setFinding] = useState("");
   const [notes, setNotes] = useState("");
+  const [categories, setCategories] = useState(buildCategoryChecklist());
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -60,6 +68,12 @@ export default function CreateQAQC() {
     );
     return () => unsub();
   }, []);
+
+  function toggleCategory(key) {
+    setCategories((prev) =>
+      prev.map((c) => (c.key === key ? { ...c, checked: !c.checked } : c)),
+    );
+  }
 
   const isComplete =
     cpId && siteName.trim() && date && unitNo.trim() && finding.trim();
@@ -100,7 +114,7 @@ export default function CreateQAQC() {
         unitNo: unitNo.trim(),
         finding: finding.trim(),
         notes: notes.trim(),
-        categories: buildCategoryChecklist(),
+        categories,
         rectifications: [],
         quotation: "",
         poNo: "",
@@ -130,6 +144,7 @@ export default function CreateQAQC() {
     setUnitNo("");
     setFinding("");
     setNotes("");
+    setCategories(buildCategoryChecklist());
     setSubmitted(false);
     setSubmitError("");
   }
@@ -164,9 +179,168 @@ export default function CreateQAQC() {
     );
   }
 
-  if (submitted) {
-    return (
-      <div className="card confirm-card">
+  const checkedCount = countCheckedDefects(categories);
+
+  return (
+    <>
+      <form className="card work-order" onSubmit={handleSubmit}>
+        <StatusStamp state={stampState} />
+
+        <header className="wo-header">
+          <div className="wo-eyebrow">14 Schedule Update Form</div>
+          <h1 className="wo-title">Create New Form</h1>
+          <div className="wo-id">
+            REF&nbsp;
+            {date.replaceAll("-", "")}
+            -DRAFT
+          </div>
+        </header>
+
+        <section className="wo-section">
+          <div className="wo-section-title">01 &mdash; Inspection Details</div>
+          <div className="grid-3">
+            <DropdownAdd
+              label="CP Name"
+              collectionName="employees"
+              options={employees}
+              value={cpId}
+              loading={loadingList}
+              onChange={(id, label) => {
+                setCpId(id);
+                setCpName(label);
+              }}
+              placeholder="-- Choose CP Name --"
+            />
+
+            <div className="field">
+              <label className="field-label">Job Site Name</label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Eg: Twin Galexy"
+                value={siteName}
+                onChange={(e) => setSiteName(e.target.value)}
+                list="site-name-suggestions"
+                autoComplete="off"
+              />
+              <datalist id="site-name-suggestions">
+                {locations.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </div>
+
+            <div className="field">
+              <label className="field-label">Docket / Block</label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Eg: BLOCK A"
+                value={docket}
+                onChange={(e) => setDocket(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label className="field-label">Date of Checking</label>
+              <input
+                type="date"
+                className="input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label className="field-label">
+                Unit No (Lift/Esc/DW/I-walk)
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Eg: L1, ESC A, DW2"
+                value={unitNo}
+                onChange={(e) => setUnitNo(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="wo-section">
+          <div className="wo-section-title">
+            02 &mdash; Finding During Check
+          </div>
+          <textarea
+            className="input textarea"
+            rows={5}
+            placeholder="Write your findings..."
+            value={finding}
+            onChange={(e) => setFinding(e.target.value)}
+          />
+        </section>
+
+        <section className="wo-section">
+          <div className="wo-section-title">
+            03 &mdash; Defect Category ({checkedCount}/
+            {DEFECT_CATEGORIES.length})
+          </div>
+          <p className="grid-hint">
+            Tick the categories that are defective for this unit. Hover a header
+            for examples.
+          </p>
+          <div className="defect-grid-wrap">
+            <table className="defect-grid">
+              <thead>
+                <tr>
+                  {DEFECT_CATEGORIES.map((c) => (
+                    <th key={c.key} title={getCategoryTooltip(c.key)}>
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {categories.map((c) => (
+                    <td key={c.key}>
+                      <input
+                        type="checkbox"
+                        className="defect-check-input"
+                        checked={c.checked}
+                        onChange={() => toggleCategory(c.key)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="wo-section">
+          <div className="wo-section-title">04 &mdash; Additional Notes</div>
+          <textarea
+            className="input textarea"
+            rows={3}
+            placeholder="Other notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </section>
+
+        {submitError && (
+          <p className="field-error submit-error">{submitError}</p>
+        )}
+
+        <div className="wo-actions">
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting ? "Submitting..." : "SUBMIT"}
+          </button>
+        </div>
+      </form>
+
+      <Modal open={submitted} onClose={() => setSubmitted(false)}>
         <StatusStamp state="submitted" />
         <h2 className="confirm-title">QRCC record submitted</h2>
         <p className="confirm-text">
@@ -182,122 +356,7 @@ export default function CreateQAQC() {
             View QRCC List
           </Link>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <form className="card work-order" onSubmit={handleSubmit}>
-      <StatusStamp state={stampState} />
-
-      <header className="wo-header">
-        <div className="wo-eyebrow">14 Schedule Update Form</div>
-        <h1 className="wo-title">Create New Form</h1>
-        <div className="wo-id">
-          REF&nbsp;
-          {date.replaceAll("-", "")}
-          -DRAFT
-        </div>
-      </header>
-
-      <section className="wo-section">
-        <div className="wo-section-title">01 &mdash; Inspection Details</div>
-        <div className="grid-3">
-          <DropdownAdd
-            label="CP Name"
-            collectionName="employees"
-            options={employees}
-            value={cpId}
-            loading={loadingList}
-            onChange={(id, label) => {
-              setCpId(id);
-              setCpName(label);
-            }}
-            placeholder="-- Choose CP Name --"
-          />
-
-          <div className="field">
-            <label className="field-label">Job Site Name</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="Eg: Twin Galexy"
-              value={siteName}
-              onChange={(e) => setSiteName(e.target.value)}
-              list="site-name-suggestions"
-              autoComplete="off"
-            />
-            <datalist id="site-name-suggestions">
-              {locations.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
-          </div>
-
-          <div className="field">
-            <label className="field-label">Docket / Block</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="Eg: BLOCK A"
-              value={docket}
-              onChange={(e) => setDocket(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label className="field-label">Date of Checking</label>
-            <input
-              type="date"
-              className="input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="field">
-            <label className="field-label">Unit No (Lift/Esc/DW/I-walk)</label>
-            <input
-              type="text"
-              className="input"
-              placeholder="Eg: L1, ESC A, DW2"
-              value={unitNo}
-              onChange={(e) => setUnitNo(e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="wo-section">
-        <div className="wo-section-title">02 &mdash; Finding During Check</div>
-        <textarea
-          className="input textarea"
-          rows={5}
-          placeholder="Write your findings..."
-          value={finding}
-          onChange={(e) => setFinding(e.target.value)}
-        />
-      </section>
-
-      <section className="wo-section">
-        <div className="wo-section-title">03 &mdash; Additional Notes</div>
-        <textarea
-          className="input textarea"
-          rows={3}
-          placeholder="Other notes (optional)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </section>
-
-      {submitError && <p className="field-error submit-error">{submitError}</p>}
-
-      <div className="wo-actions">
-        <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? "Submitting..." : "SUBMIT"}
-        </button>
-      </div>
-    </form>
+      </Modal>
+    </>
   );
 }
