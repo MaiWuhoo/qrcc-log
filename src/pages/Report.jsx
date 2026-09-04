@@ -14,8 +14,8 @@ import "./Report.css";
 
 const BASE_HEADERS = [
   "No",
-  "Owner Name",
-  "Date AUDIT",
+  "CP Name",
+  "Date Of Checking",
   "Site Name",
   "Docket",
   "Unit No",

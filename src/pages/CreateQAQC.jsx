@@ -231,7 +231,7 @@ export default function CreateQAQC() {
             </div>
 
             <div className="field">
-              <label className="field-label">Docket / Block</label>
+              <label className="field-label"> Block</label>
               <input
                 type="text"
                 className="input"
